@@ -16,8 +16,8 @@ describe("navigation shells", () => {
   });
 
   it("renders unbuilt routes as disabled text, never as dead links", () => {
-    const pending = publicNav.find((i) => !i.ready)!;
-    render(<NavLink item={pending} variant="top" />);
+    const pending = portalNav.flatMap((g) => g.items).find((i) => !i.ready)!;
+    render(<NavLink item={pending} variant="light" />);
     expect(screen.queryByRole("link", { name: pending.label })).toBeNull();
     expect(screen.getByText(pending.label).closest("[aria-disabled]")).toHaveAttribute(
       "aria-disabled",
@@ -34,7 +34,17 @@ describe("navigation shells", () => {
       .filter((i) => i.ready)
       .map((i) => i.href)
       .sort();
-    expect(readyHrefs).toEqual(["/", "/admin", "/contact", "/portal"]);
+    expect(readyHrefs).toEqual([
+      "/",
+      "/about",
+      "/admin",
+      "/contact",
+      "/faq",
+      "/portal",
+      "/process",
+      "/services",
+      "/work",
+    ]);
   });
 });
 

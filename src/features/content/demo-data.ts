@@ -23,7 +23,12 @@ export const services: Service[] = [
     summary: "Fast, search-friendly websites that explain what you do and make it easy to get in touch.",
     description:
       "Clear structure, readable content and solid technical foundations: good performance, accessible pages and sensible search metadata, so the site is easy to use and easy to find.",
-    deliverables: ["Page structure and copy review", "Responsive design", "Contact and inquiry forms", "Launch checklist"],
+    deliverables: [
+      "Page structure and copy review",
+      "Responsive design",
+      "Contact and inquiry forms",
+      "Launch checklist",
+    ],
     isDemo: true,
   },
   {
@@ -41,7 +46,12 @@ export const services: Service[] = [
     summary: "Online stores with catalogue, checkout and order management suited to your market.",
     description:
       "We build stores around your products, delivery rules and payment options, and keep the buying flow simple for customers and the order flow manageable for your team.",
-    deliverables: ["Catalogue and checkout design", "Order management", "Payment integration plan", "Launch support"],
+    deliverables: [
+      "Catalogue and checkout design",
+      "Order management",
+      "Payment integration plan",
+      "Launch support",
+    ],
     isDemo: true,
   },
   {
@@ -96,11 +106,23 @@ export const caseStudies: CaseStudy[] = [
 ];
 
 export const processSteps: ProcessStep[] = [
-  { title: "Discovery", description: "We learn the problem, the users and the constraints before proposing anything." },
-  { title: "Proposal", description: "You receive written scope, assumptions, deliverables, timeline and terms." },
-  { title: "Design", description: "Key screens and flows are designed and reviewed with you before development." },
+  {
+    title: "Discovery",
+    description: "We learn the problem, the users and the constraints before proposing anything.",
+  },
+  {
+    title: "Proposal",
+    description: "You receive written scope, assumptions, deliverables, timeline and terms.",
+  },
+  {
+    title: "Design",
+    description: "Key screens and flows are designed and reviewed with you before development.",
+  },
   { title: "Build", description: "We build in small increments so you can see real progress." },
-  { title: "QA", description: "We test the important flows, on real devices where it matters, and fix what we find." },
+  {
+    title: "QA",
+    description: "We test the important flows, on real devices where it matters, and fix what we find.",
+  },
   { title: "Deployment", description: "We release carefully and confirm everything works in production." },
   { title: "Support", description: "After launch we fix issues and agree what ongoing support you need." },
 ];

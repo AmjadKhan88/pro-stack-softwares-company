@@ -42,3 +42,8 @@
 1. Domain name and hosting preference (Vercel vs VPS)?
 2. Services list and positioning (see CONTENT_NEEDED.md).
 3. Will clients self-register, or invitation-only? (Recommendation: invitation-only.)
+
+## ADR-009 — Phase 2 content is typed demo data behind a repository
+
+- Content lives in `src/features/content/demo-data.ts`, accessed only through `repository.ts`. Phase 6 replaces the internals with MongoDB; pages do not change.
+- All records carry `isDemo: true`. Sample case studies must not contain outcomes (enforced by a test). Sample detail pages are `noindex`.

@@ -28,10 +28,11 @@ export interface NavGroup {
 
 export const publicNav: NavItem[] = [
   { label: "Home", href: "/", ready: true },
-  { label: "Services", href: "/services", ready: false, phase: 2 },
-  { label: "Work", href: "/work", ready: false, phase: 2 },
-  { label: "Process", href: "/process", ready: false, phase: 2 },
-  { label: "About", href: "/about", ready: false, phase: 2 },
+  { label: "Services", href: "/services", ready: true },
+  { label: "Work", href: "/work", ready: true },
+  { label: "Process", href: "/process", ready: true },
+  { label: "About", href: "/about", ready: true },
+  { label: "FAQ", href: "/faq", ready: true },
   { label: "Contact", href: "/contact", ready: true },
 ];
 
