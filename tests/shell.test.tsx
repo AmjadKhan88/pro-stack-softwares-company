@@ -34,7 +34,7 @@ describe("navigation shells", () => {
       .filter((i) => i.ready)
       .map((i) => i.href)
       .sort();
-    expect(readyHrefs).toEqual(["/", "/admin", "/portal"]);
+    expect(readyHrefs).toEqual(["/", "/admin", "/contact", "/portal"]);
   });
 });
 

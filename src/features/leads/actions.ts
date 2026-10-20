@@ -24,7 +24,12 @@ export async function submitInquiry(_previous: InquiryState, formData: FormData)
     const firstErrors = Object.fromEntries(
       Object.entries(fieldErrors).map(([field, messages]) => [field, messages?.[0]]),
     ) as Partial<Record<InquiryField, string>>;
-    return { status: "error", message: "Please fix the highlighted fields.", fieldErrors: firstErrors, values };
+    return {
+      status: "error",
+      message: "Please fix the highlighted fields.",
+      fieldErrors: firstErrors,
+      values,
+    };
   }
 
   try {

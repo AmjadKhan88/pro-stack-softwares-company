@@ -32,7 +32,7 @@ export const publicNav: NavItem[] = [
   { label: "Work", href: "/work", ready: false, phase: 2 },
   { label: "Process", href: "/process", ready: false, phase: 2 },
   { label: "About", href: "/about", ready: false, phase: 2 },
-  { label: "Contact", href: "/contact", ready: false, phase: 2 },
+  { label: "Contact", href: "/contact", ready: true },
 ];
 
 export const portalNav: NavGroup[] = [
