@@ -19,5 +19,7 @@
 | NEXT_PUBLIC_REALTIME_URL          | yes     | 7     | WSS endpoint (not a secret)             |
 | REALTIME_TOKEN_SECRET             | no      | 7     | signs socket auth tokens                |
 | SENTRY_DSN                        | no      | 8     | error tracking                          |
+IP_HASH_SALT	        |           |   no	    | 32+   | random characters for hashing
+NEXT_PUBLIC_ALLOW_INDEXING	      |   yes	    | false | until launch
 
 Rules: `lib/env.ts` validates with Zod at startup; missing integration keys produce a clear setup message. `.env*` is git-ignored; ship `.env.example` with empty values.
