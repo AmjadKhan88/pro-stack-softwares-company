@@ -1,3 +1,6 @@
+import { JsonLd } from "@/components/shared/json-ld";
+import { organizationSchema, websiteSchema } from "@/features/seo/structured-data";
+import { getSiteUrl } from "@/lib/seo";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { siteConfig } from "@/config/site";
@@ -10,9 +13,11 @@ import { DemoNotice } from "@/components/public-site/demo-notice";
 
 export default async function HomePage() {
   const [services, steps, studies] = await Promise.all([getServices(), getProcessSteps(), getCaseStudies()]);
-
+  const siteUrl = getSiteUrl();
   return (
     <>
+      <JsonLd data={organizationSchema(siteUrl)} />
+      <JsonLd data={websiteSchema(siteUrl)} />
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-8 sm:py-24">
         <Badge>Draft copy</Badge>
         <h1 className="mt-5 max-w-3xl text-4xl leading-[1.08] font-semibold tracking-tight sm:text-5xl">

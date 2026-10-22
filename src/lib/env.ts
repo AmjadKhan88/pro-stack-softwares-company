@@ -10,6 +10,7 @@ const serverSchema = z.object({
 
 const publicSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.url().default("http://localhost:3000"),
+  NEXT_PUBLIC_ALLOW_INDEXING: z.enum(["true", "false"]).default("false"),
 });
 
 export type ServerEnv = z.infer<typeof serverSchema>;
@@ -28,9 +29,12 @@ export function getServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv
 export function getPublicEnv(source: NodeJS.ProcessEnv = process.env): PublicEnv {
   const parsed = publicSchema.safeParse({
     NEXT_PUBLIC_APP_URL: source.NEXT_PUBLIC_APP_URL || undefined,
+    NEXT_PUBLIC_ALLOW_INDEXING: source.NEXT_PUBLIC_ALLOW_INDEXING || undefined,
   });
   if (!parsed.success) {
-    throw new Error("Invalid NEXT_PUBLIC_APP_URL. It must be a full URL such as https://example.com.");
+    throw new Error(
+      "Invalid NEXT_PUBLIC_APP_URL or NEXT_PUBLIC_ALLOW_INDEXING. The URL must be a full URL such as https://example.com and indexing must be 'true' or 'false'.",
+    );
   }
   return parsed.data;
 }

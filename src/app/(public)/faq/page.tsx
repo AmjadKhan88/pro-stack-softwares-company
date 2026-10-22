@@ -1,3 +1,5 @@
+import { JsonLd } from "@/components/shared/json-ld";
+import { faqSchema } from "@/features/seo/structured-data";
 import type { Metadata } from "next";
 import { ChevronDown } from "lucide-react";
 import { getFaqs } from "@/features/content/repository";
@@ -13,8 +15,10 @@ export const metadata: Metadata = {
 
 export default async function FaqPage() {
   const faqs = await getFaqs();
+  const realFaqs = faqs.filter((f) => !f.isDemo);
   return (
     <>
+      {realFaqs.length > 0 ? <JsonLd data={faqSchema(realFaqs)} /> : null}
       <PageIntro eyebrow="FAQ" title="Frequently asked questions">
         <DemoNotice>Draft answers. Replace them with your real policies before launch.</DemoNotice>
       </PageIntro>

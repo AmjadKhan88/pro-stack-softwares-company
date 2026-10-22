@@ -1,3 +1,6 @@
+import { JsonLd } from "@/components/shared/json-ld";
+import { breadcrumbSchema } from "@/features/seo/structured-data";
+import { getSiteUrl } from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -30,9 +33,16 @@ export default async function CaseStudyPage({ params }: Props) {
   const study = await getCaseStudyBySlug(slug);
   if (!study) notFound();
   const service = study.serviceSlug ? await getServiceBySlug(study.serviceSlug) : null;
-
+  const siteUrl = getSiteUrl();
   return (
     <>
+      <JsonLd
+        data={breadcrumbSchema(siteUrl, [
+          { name: "Home", path: "/" },
+          { name: "Work", path: "/work" },
+          { name: study.title, path: `/work/${study.slug}` },
+        ])}
+      />
       <article className="mx-auto max-w-3xl space-y-8 px-4 py-10 sm:px-8">
         <Breadcrumbs
           items={[{ label: "Home", href: "/" }, { label: "Work", href: "/work" }, { label: study.title }]}

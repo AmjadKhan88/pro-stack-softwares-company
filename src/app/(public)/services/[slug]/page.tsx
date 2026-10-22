@@ -1,3 +1,6 @@
+import { JsonLd } from "@/components/shared/json-ld";
+import { breadcrumbSchema, serviceSchema } from "@/features/seo/structured-data";
+import { getSiteUrl } from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -29,9 +32,17 @@ export default async function ServiceDetailPage({ params }: Props) {
   const service = await getServiceBySlug(slug);
   if (!service) notFound();
   const related = (await getCaseStudies()).filter((c) => c.serviceSlug === service.slug);
-
+  const siteUrl = getSiteUrl();
   return (
     <>
+      <JsonLd
+        data={breadcrumbSchema(siteUrl, [
+          { name: "Home", path: "/" },
+          { name: "Services", path: "/services" },
+          { name: service.title, path: `/services/${service.slug}` },
+        ])}
+      />
+      {!service.isDemo ? <JsonLd data={serviceSchema(siteUrl, service)} /> : null}
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-10 sm:px-8">
         <Breadcrumbs
           items={[
