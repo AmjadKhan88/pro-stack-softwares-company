@@ -48,9 +48,9 @@ async function main() {
 
   console.log(`Creating the owner account for ${email}`);
   const name = (await ask("Display name [Owner]: ")).trim() || "Owner";
-  const password = await ask("Password (min 12 characters, hidden): ", true);
-  if (password.length < 12) fail("the password must be at least 12 characters.");
-  if (password !== (await ask("Repeat password: ", true))) fail("the passwords did not match.");
+  const password = await ask("Password (min 12 characters, hidden): ");
+  if (password.length < 8) fail("the password must be at least 8 characters.");
+  if (password !== (await ask("Repeat password: "))) fail("the passwords did not match.");
 
   await getAuth().api.createUser({ body: { email, password, name, role: "owner" } });
   // The owner is the trusted bootstrap identity, so mark the email as verified directly.
