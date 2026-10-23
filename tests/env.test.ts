@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getPublicEnv, getServerEnv, requireMongoEnv } from "@/lib/env";
+import { getPublicEnv, getServerEnv, requireAuthEnv, requireMongoEnv } from "@/lib/env";
 
 describe("environment validation", () => {
   it("applies safe defaults without secrets", () => {
@@ -21,5 +21,32 @@ describe("environment validation", () => {
     expect(requireMongoEnv({ MONGODB_URI: "mongodb://x" } as unknown as NodeJS.ProcessEnv).uri).toBe(
       "mongodb://x",
     );
+  });
+});
+
+describe("blank values and auth settings", () => {
+  it("treats blank optional values as not set instead of invalid", () => {
+    const env = getServerEnv({
+      NODE_ENV: "test",
+      RESEND_API_KEY: "",
+      EMAIL_FROM: "",
+      OWNER_BOOTSTRAP_EMAIL: "",
+    } as unknown as NodeJS.ProcessEnv);
+    expect(env.RESEND_API_KEY).toBeUndefined();
+    expect(env.OWNER_BOOTSTRAP_EMAIL).toBeUndefined();
+  });
+
+  it("requires a long auth secret and fails loudly without one", () => {
+    expect(() => requireAuthEnv({ NODE_ENV: "test" } as NodeJS.ProcessEnv)).toThrow(
+      /BETTER_AUTH_SECRET is not set/,
+    );
+    expect(() => getServerEnv({ BETTER_AUTH_SECRET: "short" } as unknown as NodeJS.ProcessEnv)).toThrow(
+      /BETTER_AUTH_SECRET/,
+    );
+    const ok = requireAuthEnv({
+      BETTER_AUTH_SECRET: "a".repeat(32),
+      NEXT_PUBLIC_APP_URL: "https://example.com/",
+    } as unknown as NodeJS.ProcessEnv);
+    expect(ok.baseURL).toBe("https://example.com");
   });
 });
