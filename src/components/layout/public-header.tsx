@@ -5,6 +5,7 @@ import { ThemeSwitcher } from "@/components/shared/theme-switcher";
 import { Brand } from "./brand";
 import { MobileNav } from "./mobile-nav";
 import { NavLink } from "./nav-link";
+import Link from "next/link";
 
 export function PublicHeader() {
   return (
@@ -17,6 +18,9 @@ export function PublicHeader() {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-3">
+          <Link href="/login" className="hidden text-sm font-medium hover:underline sm:inline">
+            Sign in
+          </Link>
           <ThemeSwitcher className="hidden sm:inline-flex" />
           <Button asChild variant="accent" size="sm" className="hidden sm:inline-flex">
             <a href={`mailto:${siteConfig.email}?subject=Project%20inquiry`}>Start a project</a>
