@@ -1,3 +1,6 @@
+import "server-only";
+import nodemailer, { type Transporter } from "nodemailer";
+import { siteConfig } from "@/config/site";
 import { getServerEnv } from "@/lib/env";
 import { logger } from "@/server/logger";
 
@@ -8,42 +11,55 @@ export interface EmailMessage {
   text: string;
 }
 
+let cachedTransporter: Transporter | null = null;
+
+function getTransporter(user: string, pass: string): Transporter {
+  if (!cachedTransporter) {
+    cachedTransporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user,
+        pass: pass.replace(/\s+/g, ""),
+      },
+    });
+  }
+  return cachedTransporter;
+}
+
 /**
- * Sends through Resend when RESEND_API_KEY is set. Without a key:
+ * Sends through Gmail SMTP when GMAIL_USER and GMAIL_APP_PASSWORD are set. Without credentials:
  * - development: prints the email (including its link) to the server console, nothing is sent;
- * - production: throws, so a missing key can never look like success.
+ * - production: throws, so missing credentials can never look like success.
  */
 export async function sendEmail(message: EmailMessage): Promise<void> {
   const env = getServerEnv();
 
-  if (env.RESEND_API_KEY) {
-    if (!env.EMAIL_FROM)
-      throw new Error("EMAIL_FROM is required when RESEND_API_KEY is set (see ENVIRONMENT.md).");
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: env.EMAIL_FROM,
-        to: [message.to],
-        subject: message.subject,
-        html: message.html,
-        text: message.text,
-      }),
+  if (env.GMAIL_USER && env.GMAIL_APP_PASSWORD) {
+    const from = env.EMAIL_FROM
+      ? env.EMAIL_FROM.includes("<")
+        ? env.EMAIL_FROM
+        : `"${siteConfig.name}" <${env.EMAIL_FROM}>`
+      : `"${siteConfig.name}" <${env.GMAIL_USER}>`;
+
+    const mailer = getTransporter(env.GMAIL_USER, env.GMAIL_APP_PASSWORD);
+    await mailer.sendMail({
+      from,
+      to: message.to,
+      subject: message.subject,
+      html: message.html,
+      text: message.text,
     });
-    if (!response.ok) {
-      throw new Error(
-        `Resend rejected the email (HTTP ${response.status}): ${(await response.text()).slice(0, 200)}`,
-      );
-    }
     return;
   }
 
   if (env.NODE_ENV === "production") {
-    throw new Error("RESEND_API_KEY is not set, so emails cannot be sent in production.");
+    throw new Error(
+      "GMAIL_USER and GMAIL_APP_PASSWORD must be set in production to send emails (see ENVIRONMENT.md).",
+    );
   }
 
   console.info(
-    `\n=== DEV EMAIL (RESEND_API_KEY not set: nothing was sent) ===\nTo: ${message.to}\nSubject: ${message.subject}\n\n${message.text}\n============================================================\n`,
+    `\n=== DEV EMAIL (Gmail credentials not set: nothing was sent) ===\nTo: ${message.to}\nSubject: ${message.subject}\n\n${message.text}\n============================================================\n`,
   );
 }
 

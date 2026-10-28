@@ -7,7 +7,8 @@ const serverSchema = z.object({
   MONGODB_DB_NAME: z.string().min(1).optional(),
   IP_HASH_SALT: z.string().min(32).optional(),
   BETTER_AUTH_SECRET: z.string().min(32).optional(),
-  RESEND_API_KEY: z.string().min(1).optional(),
+  GMAIL_USER: z.string().email().optional(),
+  GMAIL_APP_PASSWORD: z.string().min(1).optional(),
   EMAIL_FROM: z.string().min(3).optional(),
   OWNER_BOOTSTRAP_EMAIL: z.email().optional(),
 });
@@ -20,7 +21,7 @@ const publicSchema = z.object({
 export type ServerEnv = z.infer<typeof serverSchema>;
 export type PublicEnv = z.infer<typeof publicSchema>;
 
-/** A blank value in .env (e.g. `RESEND_API_KEY=`) means "not set", not "invalid". */
+/** A blank value in .env (e.g. `GMAIL_APP_PASSWORD=`) means "not set", not "invalid". */
 function withoutBlanks(source: NodeJS.ProcessEnv): Record<string, string | undefined> {
   return Object.fromEntries(
     Object.entries(source).filter(([, value]) => value !== "" && value !== undefined),

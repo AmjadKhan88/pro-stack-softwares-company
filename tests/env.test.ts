@@ -28,11 +28,13 @@ describe("blank values and auth settings", () => {
   it("treats blank optional values as not set instead of invalid", () => {
     const env = getServerEnv({
       NODE_ENV: "test",
-      RESEND_API_KEY: "",
+      GMAIL_USER: "",
+      GMAIL_APP_PASSWORD: "",
       EMAIL_FROM: "",
       OWNER_BOOTSTRAP_EMAIL: "",
     } as unknown as NodeJS.ProcessEnv);
-    expect(env.RESEND_API_KEY).toBeUndefined();
+    expect(env.GMAIL_USER).toBeUndefined();
+    expect(env.GMAIL_APP_PASSWORD).toBeUndefined();
     expect(env.OWNER_BOOTSTRAP_EMAIL).toBeUndefined();
   });
 
