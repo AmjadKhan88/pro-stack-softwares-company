@@ -100,7 +100,9 @@ describe("auth messages", () => {
   it("recognises unverified, disabled and rate-limited cases", () => {
     expect(describeSignInError({ code: "EMAIL_NOT_VERIFIED" })).toEqual({ kind: "email-not-verified" });
     expect(describeSignInError({ code: "BANNED_USER" })).toMatchObject({ kind: "error" });
-    expect(describeSignInError({ status: 429 })).toMatchObject({ message: expect.stringMatching(/too many/i) });
+    expect(describeSignInError({ status: 429 })).toMatchObject({
+      message: expect.stringMatching(/too many/i),
+    });
     expect(describeCodeError({ code: "INVALID_CODE" })).toMatch(/didn't work/);
   });
 });

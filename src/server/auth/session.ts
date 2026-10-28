@@ -19,7 +19,10 @@ export interface SessionUser {
 export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   const session = await getAuth().api.getSession({ headers: await headers() });
   if (!session) return null;
-  const user = session.user as typeof session.user & { role?: string | null; twoFactorEnabled?: boolean | null };
+  const user = session.user as typeof session.user & {
+    role?: string | null;
+    twoFactorEnabled?: boolean | null;
+  };
   return {
     id: user.id,
     email: user.email,

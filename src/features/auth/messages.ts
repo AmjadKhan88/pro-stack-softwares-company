@@ -22,7 +22,9 @@ export function describeSignInError(error: AuthFailure | null | undefined): Sign
 
 export function describeCodeError(error: AuthFailure | null | undefined): string {
   if (error?.status === 429) return "Too many attempts. Please wait a minute and try again.";
-  if (error?.code === "TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE") return "Too many wrong codes. Sign in again to continue.";
-  if (error?.code === "INVALID_TWO_FACTOR_COOKIE") return "Your sign-in session expired. Please sign in again.";
+  if (error?.code === "TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE")
+    return "Too many wrong codes. Sign in again to continue.";
+  if (error?.code === "INVALID_TWO_FACTOR_COOKIE")
+    return "Your sign-in session expired. Please sign in again.";
   return "That code didn't work. Check the code and try again.";
 }
