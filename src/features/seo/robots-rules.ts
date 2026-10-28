@@ -10,6 +10,10 @@ export const PRIVATE_PATHS = [
   "/forgot-password",
   "/reset-password",
   "/verify-email",
+  "/two-factor",
+  "/continue",
+  "/security",
+  "/no-access",
   "/design-system",
 ];
 
