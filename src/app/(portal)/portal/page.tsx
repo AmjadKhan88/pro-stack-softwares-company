@@ -1,11 +1,12 @@
 import { FolderOpen } from "lucide-react";
-import { AccessNotice } from "@/components/shared/access-notice";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { requireClient } from "@/server/auth/session";
 
 export const metadata = { title: "Overview" };
 
-export default function PortalHomePage() {
+export default async function PortalHomePage() {
+  await requireClient("/portal"); // layouts do not re-run on client navigation, so every page checks too
   return (
     <div className="space-y-6">
       <PageHeader
@@ -13,7 +14,6 @@ export default function PortalHomePage() {
         title="Your projects"
         description="Track milestones, review deliverables and message the team here once the portal is live."
       />
-      <AccessNotice area="portal" />
       <EmptyState
         icon={<FolderOpen className="size-5" />}
         title="No projects yet"

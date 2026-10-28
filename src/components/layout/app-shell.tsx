@@ -1,5 +1,7 @@
 import type { NavGroup } from "@/config/navigation";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { ThemeSwitcher } from "@/components/shared/theme-switcher";
+import type { SessionUser } from "@/server/auth/session";
 import { Brand } from "./brand";
 import { MobileNav } from "./mobile-nav";
 import { SidebarNav } from "./sidebar-nav";
@@ -11,11 +13,12 @@ interface Props {
   sublabel: string;
   areaLabel: string;
   homeHref: string;
+  user: SessionUser;
   children: React.ReactNode;
 }
 
 /** Shared dashboard shell. Portal = light sidebar, admin = dark ink sidebar (per design references). */
-export function AppShell({ variant, groups, sublabel, areaLabel, homeHref, children }: Props) {
+export function AppShell({ variant, groups, sublabel, areaLabel, homeHref, user, children }: Props) {
   const dark = variant === "dark";
   return (
     <div className="flex min-h-screen">
@@ -31,11 +34,13 @@ export function AppShell({ variant, groups, sublabel, areaLabel, homeHref, child
         <SidebarNav groups={groups} variant={variant} label={`${areaLabel} navigation`} />
         <div
           className={cn(
-            "border-t px-5 py-4 text-xs",
-            dark ? "border-bone-50/10 text-bone-400" : "border-border text-muted-foreground",
+            "space-y-1 border-t px-5 py-4 text-xs",
+            dark ? "border-bone-50/10 text-bone-300" : "border-border text-muted-foreground",
           )}
         >
-          Not signed in
+          <p className="truncate font-medium">{user.name}</p>
+          <p className="truncate">{user.email}</p>
+          <SignOutButton className={dark ? "text-bone-50" : "text-foreground"} />
         </div>
       </aside>
 

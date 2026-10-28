@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AppShell } from "@/components/layout/app-shell";
+import { ClientShell } from "@/components/layout/shell-gates";
 import { portalNav } from "@/config/navigation";
 
 export const metadata: Metadata = {
@@ -9,14 +9,8 @@ export const metadata: Metadata = {
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AppShell
-      variant="light"
-      groups={portalNav}
-      sublabel="Client portal"
-      areaLabel="Client portal"
-      homeHref="/portal"
-    >
+    <ClientShell groups={portalNav} sublabel="Client portal" areaLabel="Client portal" homeHref="/portal">
       {children}
-    </AppShell>
+    </ClientShell>
   );
 }

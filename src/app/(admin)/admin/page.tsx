@@ -1,11 +1,12 @@
 import { LayoutDashboard } from "lucide-react";
-import { AccessNotice } from "@/components/shared/access-notice";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { requireStaff } from "@/server/auth/session";
 
 export const metadata = { title: "Overview" };
 
-export default function AdminHomePage() {
+export default async function AdminHomePage() {
+  await requireStaff("/admin"); // layouts do not re-run on client navigation, so every page checks too
   return (
     <div className="space-y-6">
       <PageHeader
@@ -13,7 +14,6 @@ export default function AdminHomePage() {
         title="Overview"
         description="Leads, projects and content management will be summarised here."
       />
-      <AccessNotice area="admin" />
       <EmptyState
         icon={<LayoutDashboard className="size-5" />}
         title="Nothing to show yet"
