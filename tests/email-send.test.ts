@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockSendMail = vi.fn().mockResolvedValue({ messageId: "test-id" });
-const mockCreateTransport = vi.fn(() => ({ sendMail: mockSendMail }));
+const mockCreateTransport = vi.fn((_config?: unknown) => ({ sendMail: mockSendMail }));
 
 vi.mock("server-only", () => ({}));
 
 vi.mock("nodemailer", () => ({
   default: {
-    createTransport: (...args: unknown[]) => mockCreateTransport(...args),
+    createTransport: (config: unknown) => mockCreateTransport(config),
   },
 }));
 
