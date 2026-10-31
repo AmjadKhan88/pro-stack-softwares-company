@@ -62,3 +62,22 @@ export async function requirePermission(permission: Permission, next = "/admin")
   if (!can(user.role, permission)) notFound();
   return user;
 }
+
+export class ForbiddenError extends Error {
+  constructor(message = "You don't have permission to do that.") {
+    super(message);
+    this.name = "ForbiddenError";
+  }
+}
+
+/**
+ * For server actions: returns the signed-in staff user or throws ForbiddenError.
+ * Enforces the same rules as the pages, including two-factor for owner/admin.
+ */
+export async function assertPermission(permission: Permission): Promise<SessionUser> {
+  const user = await getCurrentUser();
+  if (!user || resolveAccess(user, "admin").type !== "allow" || !can(user.role, permission)) {
+    throw new ForbiddenError();
+  }
+  return user;
+}

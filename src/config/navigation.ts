@@ -90,8 +90,8 @@ export const adminNav: NavGroup[] = [
   {
     label: "Platform",
     items: [
-      { label: "Users & roles", href: "/admin/users", icon: "users", ready: false, phase: 5 },
-      { label: "Audit log", href: "/admin/audit-logs", icon: "audit", ready: false, phase: 4 },
+      { label: "Users & roles", href: "/admin/users", icon: "users", ready: true },
+      { label: "Audit log", href: "/admin/audit-logs", icon: "audit", ready: true },
       { label: "Settings", href: "/admin/settings", icon: "settings", ready: false, phase: 6 },
     ],
   },

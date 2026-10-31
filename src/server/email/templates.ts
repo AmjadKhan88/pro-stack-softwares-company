@@ -67,3 +67,22 @@ export function passwordResetEmail({ name, url }: { name: string; url: string })
     text: `${intro}\n\n${url}\n\n${footnote}`,
   };
 }
+
+export function invitationEmail({
+  roleLabel,
+  url,
+  inviterName,
+}: {
+  roleLabel: string;
+  url: string;
+  inviterName: string;
+}): EmailContent {
+  const intro = `${inviterName} invited you to join ${siteConfig.name} as ${roleLabel}. Accept the invitation to choose your password and finish setting up your account.`;
+  const footnote =
+    "This invitation link works once and expires in 7 days. If you weren't expecting it, you can ignore this email.";
+  return {
+    subject: `You're invited to ${siteConfig.name}`,
+    html: layout({ heading: "You're invited", intro, actionLabel: "Accept invitation", url, footnote }),
+    text: `${intro}\n\n${url}\n\n${footnote}`,
+  };
+}

@@ -52,9 +52,19 @@ async function main() {
   if (password.length < 8) fail("the password must be at least 8 characters.");
   if (password !== (await ask("Repeat password: "))) fail("the passwords did not match.");
 
-  await getAuth().api.createUser({ body: { email, password, name, role: "owner" } });
+  const created = await getAuth().api.createUser({ body: { email, password, name, role: "owner" } });
   // The owner is the trusted bootstrap identity, so mark the email as verified directly.
   await users.updateOne({ email }, { $set: { emailVerified: true } });
+
+  await getMongoDb().collection("auditlogs").insertOne({
+    action: "owner.bootstrapped",
+    actorId: created.user.id,
+    actorEmail: email,
+    targetType: "user",
+    targetId: created.user.id,
+    metadata: {},
+    createdAt: new Date(),
+  });
 
   console.log(`\nOwner created: ${email}`);
   console.log("Next: sign in at /login. You will be required to set up two-factor authentication.\n");

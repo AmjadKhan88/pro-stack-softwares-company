@@ -15,6 +15,7 @@ export const PRIVATE_PATHS = [
   "/security",
   "/no-access",
   "/design-system",
+  "/accept-invite",
 ];
 
 export function buildRobots({
