@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockSendMail = vi.fn().mockResolvedValue({ messageId: "test-id" });
-const mockCreateTransport = vi.fn((_config?: unknown) => ({ sendMail: mockSendMail }));
+const mockCreateTransport = vi.fn<(config: unknown) => { sendMail: typeof mockSendMail }>(() => ({
+  sendMail: mockSendMail,
+}));
 
 vi.mock("server-only", () => ({}));
 

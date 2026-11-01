@@ -75,3 +75,9 @@ export async function sendEmailInBackground(message: EmailMessage): Promise<void
     // Not inside a Next.js request (e.g. a script): the task is already running.
   }
 }
+
+/** True when real email delivery is configured (otherwise emails are only printed to the dev console). */
+export function isEmailConfigured(): boolean {
+  const env = getServerEnv();
+  return Boolean(env.GMAIL_USER && env.GMAIL_APP_PASSWORD);
+}

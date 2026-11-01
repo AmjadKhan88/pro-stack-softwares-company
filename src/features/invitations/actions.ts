@@ -3,11 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireAuthEnv, getServerEnv } from "@/lib/env";
+import { requireAuthEnv } from "@/lib/env";
 import { logger } from "@/server/logger";
 import { getAuth } from "@/server/auth/auth";
 import { ForbiddenError, assertPermission } from "@/server/auth/session";
-import { sendEmail } from "@/server/email/send";
+import { isEmailConfigured, sendEmail } from "@/server/email/send";
 import { invitationEmail } from "@/server/email/templates";
 import { getMongoDb } from "@/server/db/mongo-client";
 import { canAssignRole } from "@/server/policies/permissions";
@@ -60,7 +60,7 @@ export async function inviteUser(_previous: InviteState, formData: FormData): Pr
     });
 
     revalidatePath("/admin/users");
-    const emailConfigured = Boolean(getServerEnv().RESEND_API_KEY);
+    const emailConfigured = isEmailConfigured();
     return {
       status: "success",
       message: emailConfigured
