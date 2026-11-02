@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { inviteUser } from "@/features/invitations/actions";
 import { ROLE_LABELS, type InvitableRole } from "@/features/invitations/rules";
 import { initialInviteState } from "@/features/invitations/state";
@@ -9,8 +9,16 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 
-export function InviteForm({ roles }: { roles: InvitableRole[] }) {
+interface Props {
+  roles: InvitableRole[];
+  organizations: { id: string; name: string }[];
+  defaultRole?: InvitableRole;
+  defaultOrganizationId?: string;
+}
+
+export function InviteForm({ roles, organizations, defaultRole, defaultOrganizationId }: Props) {
   const [state, formAction, pending] = useActionState(inviteUser, initialInviteState);
+  const [role, setRole] = useState<string>(defaultRole ?? "");
   const errors = state.status === "error" ? (state.fieldErrors ?? {}) : {};
 
   return (
@@ -21,19 +29,47 @@ export function InviteForm({ roles }: { roles: InvitableRole[] }) {
         </FormField>
         <FormField id="invite-role" label="Role" error={errors.role} required>
           {(c) => (
-            <Select name="role" defaultValue="" {...c}>
+            <Select name="role" value={role} onChange={(event) => setRole(event.target.value)} {...c}>
               <option value="" disabled>
                 Select…
               </option>
-              {roles.map((role) => (
-                <option key={role} value={role}>
-                  {ROLE_LABELS[role]}
+              {roles.map((value) => (
+                <option key={value} value={value}>
+                  {ROLE_LABELS[value]}
                 </option>
               ))}
             </Select>
           )}
         </FormField>
       </div>
+
+      {role === "client" ? (
+        <FormField
+          id="invite-organization"
+          label="Client organization"
+          hint={
+            organizations.length === 0
+              ? "Create an organization first (Clients)."
+              : "The client will only see this organization's work."
+          }
+          error={errors.organizationId}
+          required
+        >
+          {(c) => (
+            <Select name="organizationId" defaultValue={defaultOrganizationId ?? ""} {...c}>
+              <option value="" disabled>
+                Select…
+              </option>
+              {organizations.map((organization) => (
+                <option key={organization.id} value={organization.id}>
+                  {organization.name}
+                </option>
+              ))}
+            </Select>
+          )}
+        </FormField>
+      ) : null}
+
       {state.status === "error" && !state.fieldErrors ? (
         <p role="alert" className="text-danger text-sm font-medium">
           {state.message}

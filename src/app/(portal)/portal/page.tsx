@@ -1,23 +1,38 @@
-import { FolderOpen } from "lucide-react";
+import { Building2, FolderOpen } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
-import { requireClient } from "@/server/auth/session";
+import { requireClientContext } from "@/features/organizations/context";
 
 export const metadata = { title: "Overview" };
 
 export default async function PortalHomePage() {
-  await requireClient("/portal"); // layouts do not re-run on client navigation, so every page checks too
+  // The organization comes from the signed-in account, never from the URL.
+  const { organization } = await requireClientContext("/portal");
+
+  if (!organization) {
+    return (
+      <div className="space-y-6">
+        <PageHeader eyebrow="Client portal" title="Your projects" />
+        <EmptyState
+          icon={<Building2 className="size-5" />}
+          title="Your account isn't linked to an organization yet"
+          description="Please contact the team so they can connect your account to your company's workspace."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Client portal"
+        eyebrow={organization.name}
         title="Your projects"
         description="Track milestones, review deliverables and message the team here once the portal is live."
       />
       <EmptyState
         icon={<FolderOpen className="size-5" />}
         title="No projects yet"
-        description="Projects shared with your organisation will appear here after your account is invited (Phase 3 and Phase 4)."
+        description="Projects shared with your organization will appear here."
       />
     </div>
   );

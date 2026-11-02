@@ -38,9 +38,27 @@ async function main() {
       );
 
     const now = new Date();
+    const organization = await db.collection("organizations").insertOne({
+      name: "E2E Organization",
+      status: "active",
+      createdBy: "e2e-seed",
+      createdByEmail: "seed@e2e.test",
+      createdAt: now,
+      updatedAt: now,
+    });
+    const organizationId = organization.insertedId.toHexString();
+    const client = await db.collection("user").findOne({ email: E2E_ACCOUNTS.client.email });
+    await db.collection("organizationmembers").insertOne({
+      organizationId,
+      userId: String(client?._id),
+      role: "member",
+      createdAt: now,
+      updatedAt: now,
+    });
     await db.collection("invitations").insertOne({
       email: E2E_INVITEE.email,
       role: E2E_INVITEE.role,
+      organizationId,
       tokenHash: hashInviteToken(E2E_INVITE_TOKEN),
       status: "pending",
       invitedBy: "e2e-seed",

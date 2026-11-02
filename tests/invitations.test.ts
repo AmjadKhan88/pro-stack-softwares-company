@@ -73,7 +73,7 @@ describe("invitation lifecycle", () => {
 
 describe("invitation input validation", () => {
   it("normalises emails and rejects owner/unknown roles and unexpected fields", () => {
-    expect(inviteSchema.parse({ email: " Ayesha@Example.com ", role: "client" }).email).toBe(
+    expect(inviteSchema.parse({ email: " Ayesha@Example.com ", role: "support" }).email).toBe(
       "ayesha@example.com",
     );
     expect(inviteSchema.safeParse({ email: "a@b.com", role: "owner" }).success).toBe(false);

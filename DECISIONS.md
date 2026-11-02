@@ -47,3 +47,10 @@
 
 - Content lives in `src/features/content/demo-data.ts`, accessed only through `repository.ts`. Phase 6 replaces the internals with MongoDB; pages do not change.
 - All records carry `isDemo: true`. Sample case studies must not contain outcomes (enforced by a test). Sample detail pages are `noindex`.
+
+## ADR-010 — Client tenancy: one organization per client account
+
+- A client account belongs to exactly one organization (unique index on the membership's userId).
+- Client-facing code obtains the organization id only from `requireClientContext()` (derived from the signed-in account) and scopes every query to it. Ids from URLs or forms are never trusted for tenancy.
+- Clients can only be invited into an organization, and staff cannot be. If linking fails at invitation acceptance, the account is linked on first portal visit from the accepted invitation.
+- Multiple organizations per user can be added later by relaxing the unique index and adding an organization switcher.

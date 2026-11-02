@@ -8,6 +8,8 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { revokeInvite } from "@/features/invitations/actions";
 import { ROLE_LABELS, describeInviteState, invitableRolesFor } from "@/features/invitations/rules";
 import { listInvitations, listUsers } from "@/features/invitations/service";
+import { listOrganizations } from "@/features/organizations/service";
+import { isObjectId } from "@/lib/object-id";
 import { requirePermission } from "@/server/auth/session";
 import { isRole } from "@/server/policies/permissions";
 
@@ -19,9 +21,18 @@ function formatDate(date: Date) {
   return `${date.toISOString().slice(0, 10)} UTC`;
 }
 
-export default async function UsersPage() {
+export default async function UsersPage({ searchParams }: { searchParams: Promise<{ org?: string }> }) {
   const actor = await requirePermission("users.manage", "/admin/users");
-  const [users, invitations] = await Promise.all([listUsers(), listInvitations()]);
+  const { org } = await searchParams;
+  const [users, invitations, organizations] = await Promise.all([
+    listUsers(),
+    listInvitations(),
+    listOrganizations(),
+  ]);
+  const activeOrganizations = organizations
+    .filter((organization) => organization.status === "active")
+    .map(({ id, name }) => ({ id, name }));
+  const preselected = isObjectId(org) && activeOrganizations.some((o) => o.id === org) ? org : undefined;
   const roles = invitableRolesFor(actor.role);
 
   return (
@@ -37,7 +48,12 @@ export default async function UsersPage() {
           <CardTitle>Invite someone</CardTitle>
         </CardHeader>
         <CardContent>
-          <InviteForm roles={roles} />
+          <InviteForm
+            roles={roles}
+            organizations={activeOrganizations}
+            defaultRole={preselected && roles.includes("client") ? "client" : undefined}
+            defaultOrganizationId={preselected}
+          />
         </CardContent>
       </Card>
 
@@ -58,6 +74,7 @@ export default async function UsersPage() {
               <tr>
                 <Th>Email</Th>
                 <Th>Role</Th>
+                <Th>Organization</Th>
                 <Th>Status</Th>
                 <Th>Expires</Th>
                 <Th>Invited by</Th>
@@ -73,6 +90,7 @@ export default async function UsersPage() {
                   <tr key={invite.id}>
                     <Td>{invite.email}</Td>
                     <Td>{ROLE_LABELS[invite.role]}</Td>
+                    <Td className="text-muted-foreground">{invite.organizationName ?? "—"}</Td>
                     <Td>
                       <StatusPill status={pillFor[state]}>{state}</StatusPill>
                     </Td>
