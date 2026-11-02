@@ -1,15 +1,42 @@
 import { z } from "zod";
+import { isObjectId } from "@/lib/object-id";
 import { INVITABLE_ROLES } from "./rules";
 
-export const inviteSchema = z.strictObject({
-  email: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .max(254, "Email is too long.")
-    .pipe(z.email("Enter a valid email address.")),
-  role: z.enum(INVITABLE_ROLES, { error: "Choose a role." }),
-});
+export { pickFields } from "@/lib/form-fields";
+
+const emptyToUndefined = (value: unknown) =>
+  typeof value === "string" && value.trim() === "" ? undefined : value;
+
+export const inviteSchema = z
+  .strictObject({
+    email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .max(254, "Email is too long.")
+      .pipe(z.email("Enter a valid email address.")),
+    role: z.enum(INVITABLE_ROLES, { error: "Choose a role." }),
+    organizationId: z.preprocess(
+      emptyToUndefined,
+      z.string().refine(isObjectId, "Choose an organization.").optional(),
+    ),
+  })
+  .superRefine((data, ctx) => {
+    if (data.role === "client" && !data.organizationId) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["organizationId"],
+        message: "Choose the client's organization.",
+      });
+    }
+    if (data.role !== "client" && data.organizationId) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["organizationId"],
+        message: "Only client accounts belong to an organization.",
+      });
+    }
+  });
 
 export const acceptSchema = z
   .strictObject({
@@ -26,18 +53,5 @@ export const acceptSchema = z
 export type InviteInput = z.infer<typeof inviteSchema>;
 export type AcceptInput = z.infer<typeof acceptSchema>;
 
-export const INVITE_FIELDS = ["email", "role"] as const;
+export const INVITE_FIELDS = ["email", "role", "organizationId"] as const;
 export const ACCEPT_FIELDS = ["token", "name", "password", "confirm"] as const;
-
-/** Picks only known fields from FormData (Next.js adds internal "$ACTION_*" entries). */
-export function pickFields<const T extends readonly string[]>(
-  formData: FormData,
-  fields: T,
-): Record<T[number], string> {
-  const values = {} as Record<T[number], string>;
-  for (const field of fields) {
-    const raw = formData.get(field);
-    if (typeof raw === "string") values[field as T[number]] = raw;
-  }
-  return values;
-}

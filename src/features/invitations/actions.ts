@@ -12,6 +12,7 @@ import { invitationEmail } from "@/server/email/templates";
 import { getMongoDb } from "@/server/db/mongo-client";
 import { canAssignRole } from "@/server/policies/permissions";
 import { recordAudit } from "@/features/audit/service";
+import { addMember } from "@/features/organizations/service";
 import { ROLE_LABELS } from "./rules";
 import { ACCEPT_FIELDS, INVITE_FIELDS, acceptSchema, inviteSchema, pickFields } from "./schema";
 import { claimInvitation, createInvitation, releaseInvitation, revokeInvitation } from "./service";
@@ -35,7 +36,7 @@ export async function inviteUser(_previous: InviteState, formData: FormData): Pr
         fieldErrors: firstErrors(parsed.error),
       };
     }
-    const { email, role } = parsed.data;
+    const { email, role, organizationId } = parsed.data;
     if (!canAssignRole(actor.role, role)) {
       return {
         status: "error",
@@ -44,7 +45,19 @@ export async function inviteUser(_previous: InviteState, formData: FormData): Pr
       };
     }
 
-    const result = await createInvitation({ actor: { id: actor.id, email: actor.email }, email, role });
+    const result = await createInvitation({
+      actor: { id: actor.id, email: actor.email },
+      email,
+      role,
+      organizationId,
+    });
+    if (!result.ok && result.reason === "organization-not-found") {
+      return {
+        status: "error",
+        message: "That organization doesn't exist or is archived.",
+        fieldErrors: { organizationId: "Choose an active organization." },
+      };
+    }
     if (!result.ok) {
       return {
         status: "error",
@@ -110,6 +123,18 @@ export async function acceptInvite(_previous: AcceptState, formData: FormData): 
     await getMongoDb()
       .collection("user")
       .updateOne({ email: invitation.email }, { $set: { emailVerified: true } });
+    if (invitation.organizationId) {
+      try {
+        await addMember({
+          organizationId: invitation.organizationId,
+          userId: created.user.id,
+          actor: { id: created.user.id, email: invitation.email },
+        });
+      } catch (error) {
+        // The account exists, so do not fail the invitation. It is linked on first portal visit instead.
+        logger.error({ err: error }, "could not link new client to its organization yet");
+      }
+    }
     await recordAudit({
       actor: { id: created.user.id, email: invitation.email },
       action: "invitation.accepted",

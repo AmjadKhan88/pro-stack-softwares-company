@@ -5,6 +5,7 @@ import { INVITABLE_ROLES, type InvitableRole } from "../rules";
 export interface InvitationDoc {
   email: string;
   role: InvitableRole;
+  organizationId?: string;
   tokenHash: string;
   status: "pending" | "accepted" | "revoked";
   invitedBy: string;
@@ -18,6 +19,7 @@ const invitationSchema = new Schema<InvitationDoc>(
   {
     email: { type: String, required: true, lowercase: true, maxlength: 254, index: true },
     role: { type: String, enum: [...INVITABLE_ROLES], required: true },
+    organizationId: { type: String },
     tokenHash: { type: String, required: true, unique: true },
     status: { type: String, enum: ["pending", "accepted", "revoked"], default: "pending", index: true },
     invitedBy: { type: String, required: true },

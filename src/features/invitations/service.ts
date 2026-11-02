@@ -1,6 +1,7 @@
 import "server-only";
 import mongoose from "mongoose";
 import { recordAudit } from "@/features/audit/service";
+import { Organization } from "@/features/organizations/models/organization";
 import type { AuditActor } from "@/features/audit/types";
 import { connectToDatabase } from "@/server/db/mongoose";
 import { getMongoDb } from "@/server/db/mongo-client";
@@ -10,15 +11,21 @@ import { generateInviteToken, hashInviteToken } from "./tokens";
 
 export type CreateInvitationResult =
   | { ok: true; token: string; invitationId: string; expiresAt: Date }
-  | { ok: false; reason: "account-exists" };
+  | { ok: false; reason: "account-exists" | "organization-not-found" };
 
 /** Revokes older pending invites for the address, creates the new one and audits it in ONE transaction. */
 export async function createInvitation(input: {
   actor: AuditActor;
   email: string;
   role: InvitableRole;
+  organizationId?: string;
 }): Promise<CreateInvitationResult> {
   await connectToDatabase();
+  if (input.organizationId) {
+    const organization = await Organization.findById(input.organizationId).lean();
+    if (!organization || organization.status !== "active")
+      return { ok: false, reason: "organization-not-found" };
+  }
   if (await getMongoDb().collection("user").findOne({ email: input.email })) {
     return { ok: false, reason: "account-exists" };
   }
@@ -39,6 +46,7 @@ export async function createInvitation(input: {
           {
             email: input.email,
             role: input.role,
+            organizationId: input.organizationId,
             tokenHash: hashInviteToken(token),
             status: "pending",
             invitedBy: input.actor.id,
@@ -54,7 +62,7 @@ export async function createInvitation(input: {
           actor: input.actor,
           action: "invitation.created",
           target: { type: "invitation", id: invitationId },
-          metadata: { email: input.email, role: input.role },
+          metadata: { email: input.email, role: input.role, organizationId: input.organizationId },
         },
         session,
       );
@@ -69,6 +77,7 @@ export interface UsableInvitation {
   id: string;
   email: string;
   role: InvitableRole;
+  organizationId?: string;
 }
 
 /** Looks an invitation up by its link token WITHOUT using it up (for showing the accept form). */
@@ -76,7 +85,12 @@ export async function peekInvitation(token: string): Promise<UsableInvitation | 
   await connectToDatabase();
   const invite = await Invitation.findOne({ tokenHash: hashInviteToken(token) }).lean();
   if (!invite || !isInviteUsable(invite)) return null;
-  return { id: String(invite._id), email: invite.email, role: invite.role };
+  return {
+    id: String(invite._id),
+    email: invite.email,
+    role: invite.role,
+    organizationId: invite.organizationId,
+  };
 }
 
 /** Atomically uses the invitation up: only one request can ever succeed for a given link. */
@@ -88,7 +102,14 @@ export async function claimInvitation(token: string): Promise<UsableInvitation |
     { $set: { status: "accepted", acceptedAt: now } },
     { returnDocument: "after" },
   ).lean();
-  return invite ? { id: String(invite._id), email: invite.email, role: invite.role } : null;
+  return invite
+    ? {
+        id: String(invite._id),
+        email: invite.email,
+        role: invite.role,
+        organizationId: invite.organizationId,
+      }
+    : null;
 }
 
 /** Puts a claimed invitation back if account creation failed, so the person can try again. */
@@ -132,11 +153,19 @@ export interface InvitationRow {
   status: "pending" | "accepted" | "revoked";
   invitedByEmail: string;
   expiresAt: Date;
+  organizationName: string | null;
 }
 
 export async function listInvitations(limit = 50): Promise<InvitationRow[]> {
   await connectToDatabase();
   const rows = await Invitation.find().sort({ createdAt: -1 }).limit(limit).lean();
+  const organizationIds = [
+    ...new Set(rows.map((r) => r.organizationId).filter((id): id is string => Boolean(id))),
+  ];
+  const organizations = organizationIds.length
+    ? await Organization.find({ _id: { $in: organizationIds } }).lean()
+    : [];
+  const names = new Map(organizations.map((o) => [String(o._id), o.name]));
   return rows.map((row) => ({
     id: String(row._id),
     email: row.email,
@@ -144,6 +173,7 @@ export async function listInvitations(limit = 50): Promise<InvitationRow[]> {
     status: row.status,
     invitedByEmail: row.invitedByEmail,
     expiresAt: row.expiresAt,
+    organizationName: row.organizationId ? (names.get(row.organizationId) ?? null) : null,
   }));
 }
 
