@@ -74,7 +74,7 @@ export const adminNav: NavGroup[] = [
   {
     label: "Clients",
     items: [
-      { label: "Leads", href: "/admin/leads", icon: "inbox", ready: false, phase: 4 },
+      { label: "Leads", href: "/admin/leads", icon: "inbox", ready: true },
       { label: "Clients", href: "/admin/clients", icon: "users", ready: true },
       { label: "Proposals", href: "/admin/proposals", icon: "proposals", ready: false, phase: 4 },
     ],

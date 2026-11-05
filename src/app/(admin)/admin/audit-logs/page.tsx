@@ -14,6 +14,7 @@ const labels: Record<string, string> = {
   "invitation.accepted": "Invitation accepted",
   "organization.created": "Organization created",
   "organization.member_added": "Member added to organization",
+  "lead.status_changed": "Lead status changed",
 };
 
 function formatTime(date: Date) {

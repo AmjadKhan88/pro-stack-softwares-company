@@ -5,6 +5,7 @@ export const AUDIT_ACTIONS = [
   "invitation.accepted",
   "organization.created",
   "organization.member_added",
+  "lead.status_changed",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
