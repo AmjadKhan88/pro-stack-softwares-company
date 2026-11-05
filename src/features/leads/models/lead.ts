@@ -1,5 +1,6 @@
 import "server-only";
 import { Schema, model, models, type Model } from "mongoose";
+import { LEAD_STATUSES, type LeadStatus } from "../pipeline";
 import { BUDGET_RANGES, PROJECT_TYPES, TIMEFRAMES } from "../schema";
 
 export interface LeadDoc {
@@ -11,7 +12,9 @@ export interface LeadDoc {
   budgetRange?: (typeof BUDGET_RANGES)[number];
   timeframe?: (typeof TIMEFRAMES)[number];
   message: string;
-  status: "new" | "contacted" | "qualified" | "closed";
+  status: LeadStatus;
+  /** Set when staff create (or later link) the client organization for this lead. */
+  organizationId?: string;
   source: string;
   ipHash?: string;
   archivedAt?: Date;
@@ -27,7 +30,8 @@ const leadSchema = new Schema<LeadDoc>(
     budgetRange: { type: String, enum: [...BUDGET_RANGES] },
     timeframe: { type: String, enum: [...TIMEFRAMES] },
     message: { type: String, required: true, maxlength: 4000 },
-    status: { type: String, enum: ["new", "contacted", "qualified", "closed"], default: "new", index: true },
+    status: { type: String, enum: [...LEAD_STATUSES], default: "new", index: true },
+    organizationId: { type: String, index: true },
     source: { type: String, required: true },
     ipHash: { type: String },
     archivedAt: { type: Date },
