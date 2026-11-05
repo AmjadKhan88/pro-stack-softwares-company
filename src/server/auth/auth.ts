@@ -3,7 +3,7 @@ import { mongodbAdapter } from "@better-auth/mongo-adapter";
 import { admin, twoFactor } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 import { siteConfig } from "@/config/site";
-import { requireAuthEnv } from "@/lib/env";
+import { requireAuthEnv, requireMongoEnv } from "@/lib/env";
 import { getMongoClient, getMongoDb } from "@/server/db/mongo-client";
 import { sendEmailInBackground } from "@/server/email/send";
 import { passwordResetEmail, verificationEmail } from "@/server/email/templates";
@@ -16,12 +16,20 @@ const DAY = 24 * HOUR;
 
 function createAuth() {
   const { secret, baseURL } = requireAuthEnv();
+  const { uri: mongoUri } = requireMongoEnv();
+  // MongoDB transactions require a replica set (e.g. MongoDB Atlas mongodb+srv://) or explicit replicaSet=.
+  // Standalone MongoDB instances (e.g. local mongodb://localhost:27017) do not support multi-document transactions,
+  // which causes verification-token consumption (2FA TOTP verification) to fail with INVALID_TWO_FACTOR_COOKIE.
+  const supportsTransactions = mongoUri.startsWith("mongodb+srv://") || mongoUri.includes("replicaSet=");
 
   return betterAuth({
     appName: siteConfig.name,
     baseURL,
     secret,
-    database: mongodbAdapter(getMongoDb(), { client: getMongoClient() }),
+    database: mongodbAdapter(getMongoDb(), {
+      client: getMongoClient(),
+      transaction: supportsTransactions,
+    }),
 
     emailAndPassword: {
       enabled: true,
