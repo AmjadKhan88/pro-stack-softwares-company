@@ -86,3 +86,23 @@ export function invitationEmail({
     text: `${intro}\n\n${url}\n\n${footnote}`,
   };
 }
+
+export function proposalSentEmail({
+  organizationName,
+  title,
+  url,
+  expiresOn,
+}: {
+  organizationName: string;
+  title: string;
+  url: string;
+  expiresOn: string;
+}): EmailContent {
+  const intro = `${siteConfig.name} has sent a proposal for ${organizationName}: "${title}". Sign in to your client portal to read it and respond.`;
+  const footnote = `This proposal is open until ${expiresOn}. If you weren't expecting it, please contact us.`;
+  return {
+    subject: `New proposal from ${siteConfig.name}: ${title}`,
+    html: layout({ heading: "A new proposal is ready", intro, actionLabel: "View proposal", url, footnote }),
+    text: `${intro}\n\n${url}\n\n${footnote}`,
+  };
+}

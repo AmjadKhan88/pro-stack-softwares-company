@@ -12,6 +12,8 @@ import { budgetLabels, projectTypeLabels, timeframeLabels } from "@/features/lea
 import { formatDateTimeUtc } from "@/lib/format";
 import { requirePermission } from "@/server/auth/session";
 import { can } from "@/server/policies/permissions";
+import { listProposalsForLead } from "@/features/proposals/service";
+import { PROPOSAL_STATUS_LABELS, PROPOSAL_STATUS_TONE, displayStatus } from "@/features/proposals/status";
 
 export async function generateMetadata() {
   return { title: "Lead" };
@@ -22,6 +24,7 @@ function describeActivity(item: ActivityRow): string {
     return `Status changed from ${LEAD_STATUS_LABELS[item.fromStatus]} to ${LEAD_STATUS_LABELS[item.toStatus]}`;
   }
   if (item.type === "organization_linked") return "Client organization created";
+  if (item.type === "proposal") return "Proposal update";
   return "Note";
 }
 
@@ -32,6 +35,11 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
   if (!lead) notFound();
 
   const activity = await listLeadActivity(lead.id);
+  const canProposals = can(user.role, "proposals.manage");
+  const proposals = canProposals ? await listProposalsForLead(lead.id) : [];
+  const hasOpenProposal = proposals.some((p) => p.status === "draft" || p.status === "sent");
+  const canWriteProposal =
+    canProposals && lead.status === "qualified" && Boolean(lead.organizationId) && !hasOpenProposal;
   const canManage = can(user.role, "leads.manage");
   const canCreateOrganization = canManage && can(user.role, "clients.manage");
   const options = availableTransitions(lead.status, Boolean(lead.organizationId));
@@ -172,6 +180,46 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
               )}
             </CardContent>
           </Card>
+
+          {canProposals ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Proposals</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {proposals.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">No proposals yet.</p>
+                ) : (
+                  <ul className="space-y-2 text-sm">
+                    {proposals.map((proposal) => {
+                      const shown = displayStatus(proposal);
+                      return (
+                        <li key={proposal.id} className="flex items-center justify-between gap-2">
+                          <Link
+                            href={`/admin/proposals/${proposal.id}`}
+                            className="font-medium hover:underline"
+                          >
+                            {proposal.code}
+                          </Link>
+                          <StatusPill status={PROPOSAL_STATUS_TONE[shown]}>
+                            {PROPOSAL_STATUS_LABELS[shown]}
+                          </StatusPill>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {canWriteProposal ? (
+                  <Link
+                    href={`/admin/proposals/new?lead=${lead.id}`}
+                    className="text-accent text-sm font-medium hover:underline"
+                  >
+                    Write a proposal →
+                  </Link>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
 
           {canManage ? (
             <Card>

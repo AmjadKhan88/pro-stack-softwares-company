@@ -15,6 +15,12 @@ const labels: Record<string, string> = {
   "organization.created": "Organization created",
   "organization.member_added": "Member added to organization",
   "lead.status_changed": "Lead status changed",
+  "proposal.created": "Proposal created",
+  "proposal.sent": "Proposal sent",
+  "proposal.withdrawn": "Proposal withdrawn",
+  "proposal.reopened": "Proposal reopened",
+  "proposal.accepted": "Proposal accepted",
+  "proposal.declined": "Proposal declined",
 };
 
 function formatTime(date: Date) {

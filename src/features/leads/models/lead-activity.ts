@@ -4,7 +4,7 @@ import { LEAD_STATUSES, type LeadStatus } from "../pipeline";
 
 export interface LeadActivityDoc {
   leadId: string;
-  type: "note" | "status_change" | "organization_linked";
+  type: "note" | "status_change" | "organization_linked" | "proposal";
   body?: string;
   fromStatus?: LeadStatus;
   toStatus?: LeadStatus;
@@ -15,7 +15,11 @@ export interface LeadActivityDoc {
 const leadActivitySchema = new Schema<LeadActivityDoc>(
   {
     leadId: { type: String, required: true },
-    type: { type: String, enum: ["note", "status_change", "organization_linked"], required: true },
+    type: {
+      type: String,
+      enum: ["note", "status_change", "organization_linked", "proposal"],
+      required: true,
+    },
     body: { type: String, maxlength: 2000 },
     fromStatus: { type: String, enum: [...LEAD_STATUSES] },
     toStatus: { type: String, enum: [...LEAD_STATUSES] },

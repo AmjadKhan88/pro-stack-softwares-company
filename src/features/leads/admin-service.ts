@@ -112,7 +112,7 @@ export async function getLeadDetail(id: string): Promise<LeadDetail | null> {
 
 export interface ActivityRow {
   id: string;
-  type: "note" | "status_change" | "organization_linked";
+  type: "note" | "status_change" | "organization_linked" | "proposal";
   body: string | null;
   fromStatus: LeadStatus | null;
   toStatus: LeadStatus | null;
