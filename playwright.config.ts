@@ -21,6 +21,7 @@ export default defineConfig({
       ...(process.env as Record<string, string>),
       MONGODB_DB_NAME: "prostackcreations_e2e",
       NEXT_PUBLIC_APP_URL: `http://localhost:${PORT}`,
+      AUTH_SIGNIN_MAX_PER_MINUTE: "200",
     },
   },
 });

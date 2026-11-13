@@ -3,7 +3,7 @@ import { mongodbAdapter } from "@better-auth/mongo-adapter";
 import { admin, twoFactor } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 import { siteConfig } from "@/config/site";
-import { requireAuthEnv, requireMongoEnv } from "@/lib/env";
+import { requireAuthEnv, requireMongoEnv, getServerEnv } from "@/lib/env";
 import { getMongoClient, getMongoDb } from "@/server/db/mongo-client";
 import { sendEmailInBackground } from "@/server/email/send";
 import { passwordResetEmail, verificationEmail } from "@/server/email/templates";
@@ -61,7 +61,7 @@ function createAuth() {
       window: 60,
       max: 100,
       customRules: {
-        "/sign-in/email": { window: 60, max: 5 },
+        "/sign-in/email": { window: 60, max: getServerEnv().AUTH_SIGNIN_MAX_PER_MINUTE ?? 5 },
         "/request-password-reset": { window: HOUR, max: 5 },
         "/reset-password": { window: HOUR, max: 10 },
         "/two-factor/verify-totp": { window: 60, max: 5 },

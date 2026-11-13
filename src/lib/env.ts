@@ -11,6 +11,7 @@ const serverSchema = z.object({
   GMAIL_APP_PASSWORD: z.string().min(1).optional(),
   EMAIL_FROM: z.string().min(3).optional(),
   OWNER_BOOTSTRAP_EMAIL: z.email().optional(),
+  AUTH_SIGNIN_MAX_PER_MINUTE: z.coerce.number().int().min(1).max(1000).optional(),
 });
 
 const publicSchema = z.object({

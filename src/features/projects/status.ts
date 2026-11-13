@@ -35,11 +35,11 @@ export function isProjectStatus(value: unknown): value is ProjectStatus {
 }
 
 export function canMoveProject(from: ProjectStatus, to: ProjectStatus): boolean {
-  return PROJECT_MOVES[from].includes(to);
+  return projectMovesFrom(from).includes(to);
 }
 
 export function projectMovesFrom(from: ProjectStatus): readonly ProjectStatus[] {
-  return PROJECT_MOVES[from];
+  return isProjectStatus(from) ? PROJECT_MOVES[from] : [];
 }
 
 /** Completed and cancelled projects are closed: nothing inside them can change any more. */
@@ -87,11 +87,11 @@ const ITEM_MOVES: Record<ItemKind, Record<string, readonly string[]>> = {
 };
 
 export function isItemStatus(kind: ItemKind, value: unknown): boolean {
-  return typeof value === "string" && value in ITEM_MOVES[kind];
+  return typeof value === "string" && Object.hasOwn(ITEM_MOVES[kind], value);
 }
 
 export function itemMovesFrom(kind: ItemKind, from: string): readonly string[] {
-  return ITEM_MOVES[kind][from] ?? [];
+  return isItemStatus(kind, from) ? ITEM_MOVES[kind][from] : [];
 }
 
 export function canMoveItem(kind: ItemKind, from: string, to: string): boolean {

@@ -15,6 +15,8 @@ import {
 } from "@/features/proposals/status";
 import { formatDateTimeUtc } from "@/lib/format";
 import { requirePermission } from "@/server/auth/session";
+import { ConvertProposalForm } from "@/components/admin/convert-proposal-form";
+import { can } from "@/server/policies/permissions";
 
 export async function generateMetadata() {
   return { title: "Proposal" };
@@ -22,10 +24,11 @@ export async function generateMetadata() {
 
 export default async function ProposalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requirePermission("proposals.manage", `/admin/proposals/${id}`);
+  const user = await requirePermission("proposals.manage", `/admin/proposals/${id}`);
   const proposal = await getProposalForStaff(id);
   if (!proposal) notFound();
   const shown = displayStatus(proposal);
+  const canConvert = can(user.role, "projects.manage");
 
   return (
     <div className="space-y-6">
@@ -114,9 +117,20 @@ export default async function ProposalPage({ params }: { params: Promise<{ id: s
                   </span>
                   .
                 </p>
-                <p className="text-muted-foreground">
-                  Next: turn this into a project (coming in the next step).
-                </p>
+                {proposal.projectId ? (
+                  <Link
+                    href={`/admin/projects/${proposal.projectId}`}
+                    className="text-accent font-medium hover:underline"
+                  >
+                    Open the project →
+                  </Link>
+                ) : canConvert ? (
+                  <ConvertProposalForm proposalId={proposal.id} />
+                ) : (
+                  <p className="text-muted-foreground">
+                    A project manager or admin can now convert this into a project.
+                  </p>
+                )}
               </CardContent>
             </Card>
           ) : null}

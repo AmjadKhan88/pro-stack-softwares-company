@@ -41,7 +41,7 @@ export const portalNav: NavGroup[] = [
     label: "Your projects",
     items: [
       { label: "Overview", href: "/portal", icon: "dashboard", ready: true },
-      { label: "Projects", href: "/portal/projects", icon: "projects", ready: false, phase: 5 },
+      { label: "Projects", href: "/portal/projects", icon: "projects", ready: true },
       { label: "Proposals", href: "/portal/proposals", icon: "proposals", ready: true },
       { label: "Files", href: "/portal/files", icon: "files", ready: false, phase: 5 },
     ],
@@ -67,7 +67,7 @@ export const adminNav: NavGroup[] = [
     label: "Workspace",
     items: [
       { label: "Overview", href: "/admin", icon: "dashboard", ready: true },
-      { label: "Projects", href: "/admin/projects", icon: "projects", ready: false, phase: 4 },
+      { label: "Projects", href: "/admin/projects", icon: "projects", ready: true },
       { label: "Messages", href: "/admin/messages", icon: "inbox", ready: false, phase: 7 },
     ],
   },
