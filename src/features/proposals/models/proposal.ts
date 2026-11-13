@@ -34,6 +34,8 @@ export interface ProposalDoc {
   declinedAt?: Date;
   declinedBy?: Responder;
   declineReason?: string;
+  /** Set once when the accepted proposal is converted. Unique, so it can only be converted once. */
+  projectId?: string;
   createdBy: string;
   createdByEmail: string;
 }
@@ -71,6 +73,7 @@ const proposalSchema = new Schema<ProposalDoc>(
     declinedAt: { type: Date },
     declinedBy: { type: responderSchema },
     declineReason: { type: String, maxlength: 1000 },
+    projectId: { type: String, index: { unique: true, sparse: true } },
     createdBy: { type: String, required: true },
     createdByEmail: { type: String, required: true },
   },

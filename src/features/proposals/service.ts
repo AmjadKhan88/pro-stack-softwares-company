@@ -39,6 +39,7 @@ export interface ProposalView {
   declinedAt: Date | null;
   declinedBy: Responder | null;
   declineReason: string | null;
+  projectId: string | null;
   createdByEmail: string;
   createdAt: Date;
   updatedAt: Date;
@@ -73,6 +74,7 @@ function toView(doc: LeanProposal, organizationName: string | null): ProposalVie
     declinedAt: doc.declinedAt ?? null,
     declinedBy: doc.declinedBy ?? null,
     declineReason: doc.declineReason ?? null,
+    projectId: doc.projectId ?? null,
     createdByEmail: doc.createdByEmail,
     createdAt: stamps.createdAt,
     updatedAt: stamps.updatedAt,

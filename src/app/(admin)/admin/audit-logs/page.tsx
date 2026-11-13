@@ -21,6 +21,13 @@ const labels: Record<string, string> = {
   "proposal.reopened": "Proposal reopened",
   "proposal.accepted": "Proposal accepted",
   "proposal.declined": "Proposal declined",
+  "project.created": "Project created",
+  "project.status_changed": "Project status changed",
+  "project.visibility_changed": "Client visibility changed",
+  "milestone.created": "Milestone added",
+  "milestone.status_changed": "Milestone status changed",
+  "deliverable.created": "Deliverable added",
+  "deliverable.status_changed": "Deliverable status changed",
 };
 
 function formatTime(date: Date) {

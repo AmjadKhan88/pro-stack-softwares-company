@@ -12,6 +12,13 @@ export const AUDIT_ACTIONS = [
   "proposal.reopened",
   "proposal.accepted",
   "proposal.declined",
+  "project.created",
+  "project.status_changed",
+  "project.visibility_changed",
+  "milestone.created",
+  "milestone.status_changed",
+  "deliverable.created",
+  "deliverable.status_changed",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
