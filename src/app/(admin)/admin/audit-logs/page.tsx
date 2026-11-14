@@ -28,6 +28,10 @@ const labels: Record<string, string> = {
   "milestone.status_changed": "Milestone status changed",
   "deliverable.created": "Deliverable added",
   "deliverable.status_changed": "Deliverable status changed",
+  "deliverable.review_submitted": "Deliverable submitted for review",
+  "deliverable.review_withdrawn": "Review submission withdrawn",
+  "deliverable.review_approved": "Deliverable approved by client",
+  "deliverable.review_changes_requested": "Client requested changes",
 };
 
 function formatTime(date: Date) {

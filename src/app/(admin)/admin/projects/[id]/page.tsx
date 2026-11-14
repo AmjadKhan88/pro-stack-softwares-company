@@ -4,11 +4,15 @@ import { AddDeliverableForm } from "@/components/admin/add-deliverable-form";
 import { AddMilestoneForm } from "@/components/admin/add-milestone-form";
 import { ItemStatusForm } from "@/components/admin/item-status-form";
 import { ProjectStatusForm } from "@/components/admin/project-status-form";
+import { ReviewSubmitForm } from "@/components/admin/review-submit-form";
 import { VisibilityForm } from "@/components/admin/visibility-form";
+import { ReviewHistory } from "@/components/projects/review-history";
 import { StatusPill } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { REVIEW_TONE, STAFF_REVIEW_LABELS } from "@/features/projects/review";
+import { listProjectReviewEvents } from "@/features/projects/review-service";
 import { getProjectForStaff } from "@/features/projects/service";
 import {
   ITEM_STATUS_LABELS,
@@ -39,6 +43,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   const detail = await getProjectForStaff(id);
   if (!detail) notFound();
   const { project, proposalCode, milestones, deliverables } = detail;
+  const reviewEvents = await listProjectReviewEvents(project.id);
 
   const canManage = can(user.role, "projects.manage");
   const open = isProjectOpen(project.status);
@@ -113,45 +118,64 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                   description="Add what will be handed over. Clients only see the ones you mark visible."
                 />
               ) : (
-                <ul className="space-y-4">
-                  {deliverables.map((deliverable) => (
-                    <li
-                      key={deliverable.id}
-                      className="border-border space-y-2 border-b pb-4 last:border-b-0 last:pb-0"
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{deliverable.title}</span>
-                        <StatusPill status={ITEM_STATUS_TONE[deliverable.status]}>
-                          {ITEM_STATUS_LABELS[deliverable.status]}
-                        </StatusPill>
-                        <VisibilityPill visible={deliverable.clientVisible} />
-                      </div>
-                      {deliverable.description ? (
-                        <p className="text-muted-foreground text-sm leading-relaxed">
-                          {deliverable.description}
-                        </p>
-                      ) : null}
-                      {deliverable.milestoneId && milestoneTitles.get(deliverable.milestoneId) ? (
-                        <p className="text-muted-foreground text-xs">
-                          Milestone: {milestoneTitles.get(deliverable.milestoneId)}
-                        </p>
-                      ) : null}
-                      {canManage && open ? (
-                        <div className="flex flex-wrap items-center gap-3">
-                          <ItemStatusForm
-                            kind="deliverable"
-                            id={deliverable.id}
-                            status={deliverable.status}
-                          />
-                          <VisibilityForm
-                            kind="deliverable"
-                            id={deliverable.id}
-                            visible={deliverable.clientVisible}
-                          />
+                <ul className="space-y-5">
+                  {deliverables.map((deliverable) => {
+                    const approved = deliverable.reviewStatus === "approved";
+                    const inReview = deliverable.reviewStatus === "in_review";
+                    return (
+                      <li
+                        key={deliverable.id}
+                        className="border-border space-y-3 border-b pb-5 last:border-b-0 last:pb-0"
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">{deliverable.title}</span>
+                          <StatusPill status={ITEM_STATUS_TONE[deliverable.status]}>
+                            {ITEM_STATUS_LABELS[deliverable.status]}
+                          </StatusPill>
+                          <VisibilityPill visible={deliverable.clientVisible} />
+                          {deliverable.reviewStatus !== "not_submitted" ? (
+                            <StatusPill status={REVIEW_TONE[deliverable.reviewStatus]}>
+                              {STAFF_REVIEW_LABELS[deliverable.reviewStatus]}
+                            </StatusPill>
+                          ) : null}
                         </div>
-                      ) : null}
-                    </li>
-                  ))}
+                        {deliverable.description ? (
+                          <p className="text-muted-foreground text-sm leading-relaxed">
+                            {deliverable.description}
+                          </p>
+                        ) : null}
+                        {deliverable.milestoneId && milestoneTitles.get(deliverable.milestoneId) ? (
+                          <p className="text-muted-foreground text-xs">
+                            Milestone: {milestoneTitles.get(deliverable.milestoneId)}
+                          </p>
+                        ) : null}
+                        {canManage && open && !approved ? (
+                          <div className="flex flex-wrap items-center gap-3">
+                            <ItemStatusForm
+                              kind="deliverable"
+                              id={deliverable.id}
+                              status={deliverable.status}
+                            />
+                            {!inReview ? (
+                              <VisibilityForm
+                                kind="deliverable"
+                                id={deliverable.id}
+                                visible={deliverable.clientVisible}
+                              />
+                            ) : null}
+                          </div>
+                        ) : null}
+                        {canManage && open ? (
+                          <ReviewSubmitForm
+                            deliverableId={deliverable.id}
+                            state={deliverable.reviewStatus}
+                            clientVisible={deliverable.clientVisible}
+                          />
+                        ) : null}
+                        <ReviewHistory events={reviewEvents[deliverable.id] ?? []} />
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
               {canManage && open ? (

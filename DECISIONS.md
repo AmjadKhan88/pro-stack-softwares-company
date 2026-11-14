@@ -54,3 +54,10 @@
 - Client-facing code obtains the organization id only from `requireClientContext()` (derived from the signed-in account) and scopes every query to it. Ids from URLs or forms are never trusted for tenancy.
 - Clients can only be invited into an organization, and staff cannot be. If linking fails at invitation acceptance, the account is linked on first portal visit from the accepted invitation.
 - Multiple organizations per user can be added later by relaxing the unique index and adding an organization switcher.
+
+## ADR-011 — Deliverable review is a state machine with an append-only history
+
+- Each deliverable has a review state (not submitted, in review, changes requested, approved). Staff submit/withdraw; only the client approves or requests changes; approved is final and also marks the deliverable delivered.
+- Every step is written to a review-event history (shown to both sides, names only) and to the audit log, in the same transaction as the state change.
+- The client action derives the organization from the signed-in account and loads the deliverable through the organization-scoped project filter, so another organization's deliverable is indistinguishable from a missing one.
+- File attachments are deferred to Phase 6 (Cloudinary); messaging to Phase 7.

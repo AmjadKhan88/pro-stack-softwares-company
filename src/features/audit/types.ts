@@ -19,6 +19,10 @@ export const AUDIT_ACTIONS = [
   "milestone.status_changed",
   "deliverable.created",
   "deliverable.status_changed",
+  "deliverable.review_submitted",
+  "deliverable.review_withdrawn",
+  "deliverable.review_approved",
+  "deliverable.review_changes_requested",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

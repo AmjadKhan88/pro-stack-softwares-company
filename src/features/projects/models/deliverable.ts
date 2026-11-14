@@ -13,7 +13,7 @@ export interface DeliverableDoc {
   /** Hidden from clients unless staff explicitly turn this on. */
   clientVisible: boolean;
   /** Missing on deliverables created before reviews existed; read it with normalizeReviewState(). */
-  reviewStatus?: ReviewState;
+  reviewStatus?: ReviewState | null;
   /** How many times it has been submitted for review. */
   reviewRound?: number;
   createdBy: string;

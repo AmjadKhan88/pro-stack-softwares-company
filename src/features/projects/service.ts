@@ -24,6 +24,7 @@ import {
   type MilestoneStatus,
   type ProjectStatus,
 } from "./status";
+import { normalizeReviewState, type ReviewState } from "./review";
 
 function isDuplicateKey(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === 11000;
@@ -78,6 +79,8 @@ export interface DeliverableView {
   description: string | null;
   status: DeliverableStatus;
   clientVisible: boolean;
+  reviewStatus: ReviewState;
+  reviewRound: number;
 }
 
 function toProjectView(doc: ProjectDoc & { _id: unknown }, organizationName: string | null): ProjectView {
@@ -119,6 +122,8 @@ function toDeliverableView(doc: DeliverableDoc & { _id: unknown }): DeliverableV
     description: doc.description ?? null,
     status: doc.status,
     clientVisible: doc.clientVisible,
+    reviewStatus: normalizeReviewState(doc.reviewStatus),
+    reviewRound: doc.reviewRound ?? 0,
   };
 }
 
@@ -433,6 +438,9 @@ export async function changeDeliverableStatus(input: {
     const project = await Project.findById(deliverable.projectId).session(session);
     if (!project) return { ok: false, reason: "not-found" };
     if (!isProjectOpen(project.status)) return { ok: false, reason: "project-closed" };
+    if (normalizeReviewState(deliverable.reviewStatus) === "approved") {
+      return { ok: false, reason: "invalid-transition" };
+    }
     if (!canMoveItem("deliverable", deliverable.status, input.to))
       return { ok: false, reason: "invalid-transition" };
 
@@ -481,6 +489,10 @@ export async function setItemVisibility(input: {
       if (!deliverable) return { ok: false, reason: "not-found" };
       projectId = deliverable.projectId;
       title = deliverable.title;
+      const reviewState = normalizeReviewState(deliverable.reviewStatus);
+      if (!input.visible && (reviewState === "in_review" || reviewState === "approved")) {
+        return { ok: false, reason: "invalid-transition" };
+      }
     }
     const project = await Project.findById(projectId).session(session);
     if (!project) return { ok: false, reason: "not-found" };

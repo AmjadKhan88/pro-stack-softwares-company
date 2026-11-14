@@ -1,15 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ReviewResponseForm } from "@/components/portal/review-response-form";
+import { ReviewHistory } from "@/components/projects/review-history";
 import { StatusPill } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { requireClientContext } from "@/features/organizations/context";
+import { CLIENT_REVIEW_LABELS, REVIEW_TONE } from "@/features/projects/review";
+import { listClientProjectReviewEvents } from "@/features/projects/review-service";
 import { getClientProject } from "@/features/projects/service";
 import {
   ITEM_STATUS_LABELS,
   ITEM_STATUS_TONE,
   PROJECT_STATUS_LABELS,
   PROJECT_STATUS_TONE,
+  isProjectOpen,
 } from "@/features/projects/status";
 import { formatDateUtc } from "@/lib/format";
 
@@ -26,6 +31,8 @@ export default async function PortalProjectPage({ params }: { params: Promise<{ 
   const detail = await getClientProject(organization.id, id);
   if (!detail) notFound();
   const { project, milestones, deliverables, progress } = detail;
+  const reviewEvents = await listClientProjectReviewEvents(organization.id, project.id);
+  const open = isProjectOpen(project.status);
 
   return (
     <div className="space-y-6">
@@ -114,20 +121,34 @@ export default async function PortalProjectPage({ params }: { params: Promise<{ 
                 description="What we hand over will be listed here."
               />
             ) : (
-              <ul className="space-y-4">
+              <ul className="space-y-5">
                 {deliverables.map((deliverable) => (
-                  <li key={deliverable.id} className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium">{deliverable.title}</span>
-                      <StatusPill status={ITEM_STATUS_TONE[deliverable.status]}>
-                        {ITEM_STATUS_LABELS[deliverable.status]}
-                      </StatusPill>
+                  <li key={deliverable.id} className="space-y-3">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{deliverable.title}</span>
+                        <StatusPill status={ITEM_STATUS_TONE[deliverable.status]}>
+                          {ITEM_STATUS_LABELS[deliverable.status]}
+                        </StatusPill>
+                        {deliverable.reviewStatus !== "not_submitted" ? (
+                          <StatusPill status={REVIEW_TONE[deliverable.reviewStatus]}>
+                            {CLIENT_REVIEW_LABELS[deliverable.reviewStatus]}
+                          </StatusPill>
+                        ) : null}
+                      </div>
+                      {deliverable.description ? (
+                        <p className="text-muted-foreground text-sm leading-relaxed">
+                          {deliverable.description}
+                        </p>
+                      ) : null}
                     </div>
-                    {deliverable.description ? (
-                      <p className="text-muted-foreground text-sm leading-relaxed">
-                        {deliverable.description}
-                      </p>
+                    {deliverable.reviewStatus === "in_review" && open ? (
+                      <div className="border-border bg-surface-muted space-y-3 rounded-lg border p-4">
+                        <p className="text-sm font-medium">This deliverable is ready for your review.</p>
+                        <ReviewResponseForm deliverableId={deliverable.id} />
+                      </div>
                     ) : null}
+                    <ReviewHistory events={reviewEvents[deliverable.id] ?? []} />
                   </li>
                 ))}
               </ul>
