@@ -1,5 +1,6 @@
 import "server-only";
 import { Schema, model, models, type Model } from "mongoose";
+import { REVIEW_STATES, type ReviewState } from "../review";
 import { DELIVERABLE_STATUSES, type DeliverableStatus } from "../status";
 
 export interface DeliverableDoc {
@@ -11,6 +12,10 @@ export interface DeliverableDoc {
   position: number;
   /** Hidden from clients unless staff explicitly turn this on. */
   clientVisible: boolean;
+  /** Missing on deliverables created before reviews existed; read it with normalizeReviewState(). */
+  reviewStatus?: ReviewState;
+  /** How many times it has been submitted for review. */
+  reviewRound?: number;
   createdBy: string;
 }
 
@@ -23,6 +28,8 @@ const deliverableSchema = new Schema<DeliverableDoc>(
     status: { type: String, enum: [...DELIVERABLE_STATUSES], default: "planned" },
     position: { type: Number, required: true, default: 0 },
     clientVisible: { type: Boolean, required: true, default: false },
+    reviewStatus: { type: String, enum: [...REVIEW_STATES], default: "not_submitted" },
+    reviewRound: { type: Number, default: 0 },
     createdBy: { type: String, required: true },
   },
   { timestamps: true },
