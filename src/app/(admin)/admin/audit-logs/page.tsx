@@ -34,6 +34,9 @@ const labels: Record<string, string> = {
   "deliverable.review_changes_requested": "Client requested changes",
   "project.member_assigned": "Team member assigned",
   "project.member_removed": "Team member removed",
+  "user.role_changed": "Account role changed",
+  "user.disabled": "Account disabled",
+  "user.enabled": "Account re-enabled",
 };
 
 function formatTime(date: Date) {

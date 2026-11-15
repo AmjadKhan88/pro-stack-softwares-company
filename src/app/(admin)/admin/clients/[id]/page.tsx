@@ -8,6 +8,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Table, Td, Th } from "@/components/ui/table";
 import { getOrganization, listMembers } from "@/features/organizations/service";
 import { requirePermission } from "@/server/auth/session";
+import { LinkClientForm } from "@/components/admin/link-client-form";
+import { listUnlinkedClients } from "@/features/organizations/link-service";
 
 export async function generateMetadata() {
   return { title: "Organization" };
@@ -19,6 +21,8 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
   const organization = await getOrganization(id);
   if (!organization) notFound();
   const members = await listMembers(organization.id);
+
+  const unlinked = organization.status === "active" ? await listUnlinkedClients() : [];
 
   return (
     <div className="space-y-6">
@@ -69,6 +73,19 @@ export default async function OrganizationPage({ params }: { params: Promise<{ i
           </Table>
         )}
       </Card>
+      {organization.status === "active" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Link an existing client account</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LinkClientForm
+              organizationId={organization.id}
+              candidates={unlinked.map((c) => ({ id: c.id, label: `${c.name} (${c.email})` }))}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

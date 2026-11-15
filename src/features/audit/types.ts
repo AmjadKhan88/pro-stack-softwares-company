@@ -25,6 +25,9 @@ export const AUDIT_ACTIONS = [
   "deliverable.review_changes_requested",
   "project.member_assigned",
   "project.member_removed",
+  "user.role_changed",
+  "user.disabled",
+  "user.enabled",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

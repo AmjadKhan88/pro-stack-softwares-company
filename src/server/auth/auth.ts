@@ -69,9 +69,15 @@ function createAuth() {
     },
 
     hooks: {
-      // Owner/admin sessions without two-factor must not be able to use the admin API either.
       before: createAuthMiddleware(async (ctx) => {
         if (!ctx.path.startsWith("/admin/")) return;
+        // Account administration happens only on our own screens, which apply our rules (owner protection,
+        // admins can't touch admins, no self-changes...). The plugin's raw HTTP endpoints are closed so nobody
+        // can bypass those rules with a hand-made request. Server-side calls (invitations, the owner bootstrap)
+        // have no HTTP request and still work.
+        if (ctx.request) {
+          throw new APIError("FORBIDDEN", { message: "Use the admin screens to manage accounts." });
+        }
         const session = await getSessionFromCtx(ctx);
         const user = session?.user as { role?: string | null; twoFactorEnabled?: boolean | null } | undefined;
         const subject = user ? { role: user.role, twoFactorEnabled: user.twoFactorEnabled === true } : null;
