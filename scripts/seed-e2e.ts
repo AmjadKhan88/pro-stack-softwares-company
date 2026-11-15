@@ -211,6 +211,16 @@ async function main() {
       { ...item, projectId: E2E_IDS.projectB, title: "Deliverable B secret", clientVisible: true },
     ]);
 
+    // The developer is assigned to project A only.
+    const developer = await db.collection("user").findOne({ email: E2E_ACCOUNTS.developer.email });
+    await db.collection("projectmembers").insertOne({
+      projectId: E2E_IDS.projectA,
+      userId: String(developer?._id),
+      assignedBy: "e2e-seed",
+      assignedByEmail: "seed@e2e.test",
+      ...stamps,
+    });
+
     console.log(
       `Seeded ${db.databaseName}: ${Object.keys(E2E_ACCOUNTS).join(", ")}, two organizations, proposals and projects.`,
     );

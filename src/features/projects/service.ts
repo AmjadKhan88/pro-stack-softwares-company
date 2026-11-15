@@ -525,9 +525,11 @@ async function organizationNames(ids: string[]): Promise<Map<string, string>> {
   return new Map(organizations.map((o) => [String(o._id), o.name]));
 }
 
-export async function listProjects(): Promise<ProjectView[]> {
+/** `onlyIds` limits the list to those projects (an empty list returns nothing). Omit it for "all projects". */
+export async function listProjects(scope: { onlyIds?: string[] } = {}): Promise<ProjectView[]> {
   await connectToDatabase();
-  const docs = await Project.find().sort({ updatedAt: -1 }).limit(200).lean();
+  const query = scope.onlyIds ? { _id: { $in: scope.onlyIds.filter(isObjectId) } } : {};
+  const docs = await Project.find(query).sort({ updatedAt: -1 }).limit(200).lean();
   const names = await organizationNames(docs.map((d) => d.organizationId));
   return docs.map((d) => toProjectView(d, names.get(d.organizationId) ?? null));
 }

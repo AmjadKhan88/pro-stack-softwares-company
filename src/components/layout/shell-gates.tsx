@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import type { NavGroup } from "@/config/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireClient, requireStaff } from "@/server/auth/session";
 import { AppShell } from "./app-shell";
+import { filterNavForRole, type NavGroup } from "@/config/navigation";
 
 function ShellFallback() {
   return (
@@ -29,7 +29,7 @@ interface ShellProps {
 async function StaffShellInner({ children, ...shell }: ShellProps) {
   const user = await requireStaff("/admin");
   return (
-    <AppShell variant="dark" user={user} {...shell}>
+    <AppShell variant="dark" user={user} {...shell} groups={filterNavForRole(shell.groups, user.role)}>
       {children}
     </AppShell>
   );

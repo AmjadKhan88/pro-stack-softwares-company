@@ -8,6 +8,7 @@ export const E2E_ACCOUNTS = {
   support: { email: "support@e2e.test", name: "E2E Support", role: "support" },
   pm: { email: "pm@e2e.test", name: "E2E Project Manager", role: "project_manager" },
   admin: { email: "admin@e2e.test", name: "E2E Admin", role: "admin" },
+  developer: { email: "dev@e2e.test", name: "E2E Developer", role: "developer" },
 } as const;
 
 export const E2E_INVITEE = { email: "invitee@e2e.test", role: "client" } as const;

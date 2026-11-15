@@ -61,3 +61,10 @@
 - Every step is written to a review-event history (shown to both sides, names only) and to the audit log, in the same transaction as the state change.
 - The client action derives the organization from the signed-in account and loads the deliverable through the organization-scoped project filter, so another organization's deliverable is indistinguishable from a missing one.
 - File attachments are deferred to Phase 6 (Cloudinary); messaging to Phase 7.
+
+## ADR-012 — Project access: role scope plus team assignment
+- projectAccessScope(role) is "all" (read.all roles), "assigned" (read.assigned roles) or "none". Developers have scope "assigned": they can read a project only if a ProjectMember record exists for them.
+- Every staff page about one project calls requireProjectAccess(id); lists use visibleProjectIds(user). Failures are 404, never 403, so project ids can't be probed.
+- Access needs BOTH the role's scope and the membership; changing someone's role makes old assignments inert.
+- Team changes need projects.manage, are audited in the same transaction, and removal stays possible on closed projects.
+- Menu visibility (filterNavForRole) is presentation only; the server enforces every page and action.

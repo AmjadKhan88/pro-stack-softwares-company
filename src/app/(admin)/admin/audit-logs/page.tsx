@@ -32,6 +32,8 @@ const labels: Record<string, string> = {
   "deliverable.review_withdrawn": "Review submission withdrawn",
   "deliverable.review_approved": "Deliverable approved by client",
   "deliverable.review_changes_requested": "Client requested changes",
+  "project.member_assigned": "Team member assigned",
+  "project.member_removed": "Team member removed",
 };
 
 function formatTime(date: Date) {

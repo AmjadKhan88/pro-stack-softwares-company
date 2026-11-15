@@ -22,8 +22,10 @@ import {
   isProjectOpen,
 } from "@/features/projects/status";
 import { formatDateTimeUtc, formatDateUtc } from "@/lib/format";
-import { requirePermission } from "@/server/auth/session";
 import { can } from "@/server/policies/permissions";
+import { ProjectTeamCard } from "@/components/admin/project-team-card";
+import { requireProjectAccess } from "@/features/projects/access";
+import { listAssignableStaff, listTeam } from "@/features/projects/team-service";
 
 export async function generateMetadata() {
   return { title: "Project" };
@@ -39,14 +41,16 @@ function VisibilityPill({ visible }: { visible: boolean }) {
 
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await requirePermission("projects.read.all", `/admin/projects/${id}`);
+  const { user } = await requireProjectAccess(id);
   const detail = await getProjectForStaff(id);
   if (!detail) notFound();
   const { project, proposalCode, milestones, deliverables } = detail;
   const reviewEvents = await listProjectReviewEvents(project.id);
+  const team = await listTeam(project.id);
 
   const canManage = can(user.role, "projects.manage");
   const open = isProjectOpen(project.status);
+  const candidates = canManage && open ? await listAssignableStaff(team.map((member) => member.userId)) : [];
   const milestoneTitles = new Map(milestones.map((m) => [m.id, m.title]));
 
   return (
@@ -245,6 +249,13 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
               {canManage ? <ProjectStatusForm projectId={project.id} status={project.status} /> : null}
             </CardContent>
           </Card>
+          <ProjectTeamCard
+            projectId={project.id}
+            team={team}
+            candidates={candidates}
+            canManage={canManage}
+            open={open}
+          />
         </div>
       </div>
     </div>

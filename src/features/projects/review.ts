@@ -76,9 +76,7 @@ export function canSubmitForReview(input: {
  * Mongo filter value for "the deliverable is currently in this state". Old documents have no field at all, and
  * `null` matches a missing field, so "not_submitted" must also match those.
  */
-export function reviewStateFilter(
-  state: ReviewState,
-): ReviewState | { $in: (ReviewState | null)[] } {
+export function reviewStateFilter(state: ReviewState): ReviewState | { $in: (ReviewState | null)[] } {
   return state === "not_submitted" ? { $in: ["not_submitted", null] } : state;
 }
 

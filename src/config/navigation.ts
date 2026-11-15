@@ -1,3 +1,4 @@
+import { can, type Permission } from "@/server/policies/permissions";
 export type NavIconName =
   | "dashboard"
   | "projects"
@@ -19,6 +20,8 @@ export interface NavItem {
   /** Only routes that exist and work are `ready`. Others render as disabled with a reason. */
   ready: boolean;
   phase?: number;
+  /** Show this item only to roles that hold at least one of these permissions. */
+  anyOf?: Permission[];
 }
 
 export interface NavGroup {
@@ -67,32 +70,84 @@ export const adminNav: NavGroup[] = [
     label: "Workspace",
     items: [
       { label: "Overview", href: "/admin", icon: "dashboard", ready: true },
-      { label: "Projects", href: "/admin/projects", icon: "projects", ready: true },
-      { label: "Messages", href: "/admin/messages", icon: "inbox", ready: false, phase: 7 },
+      {
+        label: "Projects",
+        href: "/admin/projects",
+        icon: "projects",
+        ready: true,
+        anyOf: ["projects.read.all", "projects.read.assigned"],
+      },
+      {
+        label: "Messages",
+        href: "/admin/messages",
+        icon: "inbox",
+        ready: false,
+        phase: 7,
+        anyOf: ["projects.read.all"],
+      },
     ],
   },
   {
     label: "Clients",
     items: [
-      { label: "Leads", href: "/admin/leads", icon: "inbox", ready: true },
-      { label: "Clients", href: "/admin/clients", icon: "users", ready: true },
-      { label: "Proposals", href: "/admin/proposals", icon: "proposals", ready: true },
+      { label: "Leads", href: "/admin/leads", icon: "inbox", ready: true, anyOf: ["leads.read"] },
+      { label: "Clients", href: "/admin/clients", icon: "users", ready: true, anyOf: ["clients.manage"] },
+      {
+        label: "Proposals",
+        href: "/admin/proposals",
+        icon: "proposals",
+        ready: true,
+        anyOf: ["proposals.manage"],
+      },
     ],
   },
   {
     label: "Website",
     items: [
-      { label: "Content", href: "/admin/content/pages", icon: "content", ready: false, phase: 6 },
-      { label: "Media", href: "/admin/media", icon: "media", ready: false, phase: 6 },
-      { label: "SEO", href: "/admin/seo", icon: "seo", ready: false, phase: 6 },
+      {
+        label: "Content",
+        href: "/admin/content/pages",
+        icon: "content",
+        ready: false,
+        phase: 6,
+        anyOf: ["content.edit"],
+      },
+      {
+        label: "Media",
+        href: "/admin/media",
+        icon: "media",
+        ready: false,
+        phase: 6,
+        anyOf: ["content.edit"],
+      },
+      { label: "SEO", href: "/admin/seo", icon: "seo", ready: false, phase: 6, anyOf: ["content.edit"] },
     ],
   },
   {
     label: "Platform",
     items: [
-      { label: "Users & roles", href: "/admin/users", icon: "users", ready: true },
-      { label: "Audit log", href: "/admin/audit-logs", icon: "audit", ready: true },
-      { label: "Settings", href: "/admin/settings", icon: "settings", ready: false, phase: 6 },
+      { label: "Users & roles", href: "/admin/users", icon: "users", ready: true, anyOf: ["users.manage"] },
+      { label: "Audit log", href: "/admin/audit-logs", icon: "audit", ready: true, anyOf: ["audit.read"] },
+      {
+        label: "Settings",
+        href: "/admin/settings",
+        icon: "settings",
+        ready: false,
+        phase: 6,
+        anyOf: ["settings.manage"],
+      },
     ],
   },
 ];
+
+/** Hides the items a role has no permission for, and any group left empty. The server still checks every page. */
+export function filterNavForRole(groups: NavGroup[], role: unknown): NavGroup[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => !item.anyOf || item.anyOf.some((permission) => can(role, permission)),
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
+}
