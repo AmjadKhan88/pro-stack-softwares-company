@@ -63,8 +63,15 @@
 - File attachments are deferred to Phase 6 (Cloudinary); messaging to Phase 7.
 
 ## ADR-012 — Project access: role scope plus team assignment
+
 - projectAccessScope(role) is "all" (read.all roles), "assigned" (read.assigned roles) or "none". Developers have scope "assigned": they can read a project only if a ProjectMember record exists for them.
 - Every staff page about one project calls requireProjectAccess(id); lists use visibleProjectIds(user). Failures are 404, never 403, so project ids can't be probed.
 - Access needs BOTH the role's scope and the membership; changing someone's role makes old assignments inert.
 - Team changes need projects.manage, are audited in the same transaction, and removal stays possible on closed projects.
 - Menu visibility (filterNavForRole) is presentation only; the server enforces every page and action.
+
+## ADR-013 — Account administration only through our own screens
+- The Better Auth admin plugin's raw HTTP endpoints (/api/auth/admin/*) are closed with a before-hook. Account changes (role, disable/enable) happen only through our server actions, which apply our rules first (pure, tested functions) and then change the user record, delete sessions / project assignments and write the audit record in ONE native MongoDB transaction.
+- Rules: only owner/admin; nobody changes their own role or status; owners are protected (admins can never touch them; the last active owner can't be changed by anyone); admins can't touch or grant admin; ownership is never granted here; client accounts never switch to or from staff roles.
+- Disabling uses Better Auth's own `banned` flag and deletes all sessions immediately. Moving to a role that can't be on project teams removes team memberships.
+- Linking an existing client account to an organization needs clients.manage and is audited; one organization per account.

@@ -40,6 +40,14 @@ async function main() {
         { $set: { emailVerified: true } },
       );
 
+    // This account is disabled: it must not be able to sign in.
+    await db
+      .collection("user")
+      .updateOne(
+        { email: E2E_ACCOUNTS.disabled.email },
+        { $set: { banned: true, banReason: "Disabled for the end-to-end test" } },
+      );
+
     const now = new Date();
     const later = new Date(now.getTime() + 20 * 24 * 60 * 60 * 1000);
     const stamps = { createdAt: now, updatedAt: now };
