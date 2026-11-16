@@ -46,6 +46,7 @@ export const portalNav: NavGroup[] = [
       { label: "Overview", href: "/portal", icon: "dashboard", ready: true },
       { label: "Projects", href: "/portal/projects", icon: "projects", ready: true },
       { label: "Proposals", href: "/portal/proposals", icon: "proposals", ready: true },
+      { label: "Requests", href: "/portal/requests", icon: "inbox", ready: true },
       { label: "Files", href: "/portal/files", icon: "files", ready: false, phase: 6 },
     ],
   },

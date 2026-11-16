@@ -28,6 +28,7 @@ export const AUDIT_ACTIONS = [
   "user.role_changed",
   "user.disabled",
   "user.enabled",
+  "lead.created_from_portal",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
