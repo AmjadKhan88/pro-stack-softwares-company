@@ -1,18 +1,27 @@
 import Link from "next/link";
 import { CreateOrganizationForm } from "@/components/admin/create-organization-form";
+import { Pagination } from "@/components/lists/pagination";
+import { SearchBar } from "@/components/lists/search-bar";
 import { StatusPill } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, Td, Th } from "@/components/ui/table";
-import { listOrganizations } from "@/features/organizations/service";
+import { parseOrganizationFilters } from "@/features/lists/params";
+import { listOrganizationsPaged } from "@/features/organizations/list-service";
 import { requirePermission } from "@/server/auth/session";
 
 export const metadata = { title: "Clients" };
 
-export default async function ClientsPage() {
+export default async function ClientsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requirePermission("clients.manage", "/admin/clients");
-  const organizations = await listOrganizations();
+  const filters = parseOrganizationFilters(await searchParams);
+  const list = await listOrganizationsPaged(filters);
+  const filtered = Boolean(filters.q || filters.status);
 
   return (
     <div className="space-y-6">
@@ -31,17 +40,37 @@ export default async function ClientsPage() {
         </CardContent>
       </Card>
 
+      <SearchBar
+        basePath="/admin/clients"
+        q={filters.q}
+        placeholder="Name or contact email"
+        hasFilters={filtered}
+        selects={[
+          {
+            name: "status",
+            label: "Status",
+            value: filters.status,
+            allLabel: "Any status",
+            options: [
+              { value: "active", label: "Active" },
+              { value: "archived", label: "Archived" },
+            ],
+          },
+        ]}
+      />
+
       <Card>
-        <CardHeader>
-          <CardTitle>Organizations</CardTitle>
-        </CardHeader>
-        {organizations.length === 0 ? (
-          <CardContent>
+        {list.rows.length === 0 ? (
+          <div className="p-5">
             <EmptyState
-              title="No organizations yet"
-              description="Create one above, then invite the client's people to it from Users & roles."
+              title={filtered ? "No organizations match" : "No organizations yet"}
+              description={
+                filtered
+                  ? "Try a different search or filter."
+                  : "Create one above, then invite the client's people to it from Users & roles."
+              }
             />
-          </CardContent>
+          </div>
         ) : (
           <Table>
             <thead>
@@ -53,7 +82,7 @@ export default async function ClientsPage() {
               </tr>
             </thead>
             <tbody>
-              {organizations.map((organization) => (
+              {list.rows.map((organization) => (
                 <tr key={organization.id}>
                   <Td className="font-medium">
                     <Link href={`/admin/clients/${organization.id}`} className="hover:underline">
@@ -73,6 +102,15 @@ export default async function ClientsPage() {
           </Table>
         )}
       </Card>
+
+      <Pagination
+        basePath="/admin/clients"
+        params={{ q: filters.q, status: filters.status }}
+        page={list.page}
+        pageCount={list.pageCount}
+        total={list.total}
+        noun={["organization", "organizations"]}
+      />
     </div>
   );
 }

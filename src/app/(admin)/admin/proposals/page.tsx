@@ -1,17 +1,19 @@
 import Link from "next/link";
+import { Pagination } from "@/components/lists/pagination";
+import { SearchBar } from "@/components/lists/search-bar";
 import { StatusPill } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, Td, Th } from "@/components/ui/table";
+import { parseProposalFilters } from "@/features/lists/params";
 import { formatMoney } from "@/features/proposals/money";
-import { listProposals } from "@/features/proposals/service";
+import { listProposalsPaged } from "@/features/proposals/list-service";
 import {
   PROPOSAL_STATUSES,
   PROPOSAL_STATUS_LABELS,
   PROPOSAL_STATUS_TONE,
   displayStatus,
-  isProposalStatus,
 } from "@/features/proposals/status";
 import { formatDateUtc } from "@/lib/format";
 import { requirePermission } from "@/server/auth/session";
@@ -24,15 +26,9 @@ export default async function ProposalsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await requirePermission("proposals.manage", "/admin/proposals");
-  const params = await searchParams;
-  const rawStatus = Array.isArray(params.status) ? params.status[0] : params.status;
-  const status = isProposalStatus(rawStatus) ? rawStatus : undefined;
-  const { rows, counts } = await listProposals({ status });
-  const total = PROPOSAL_STATUSES.reduce((sum, s) => sum + counts[s], 0);
-
-  const chip = "rounded-full border px-3 py-1 text-sm transition-colors";
-  const chipIdle = `${chip} border-border bg-surface text-muted-foreground hover:text-foreground`;
-  const chipActive = `${chip} border-primary bg-primary text-primary-foreground`;
+  const filters = parseProposalFilters(await searchParams);
+  const list = await listProposalsPaged(filters);
+  const filtered = Boolean(filters.q || filters.status);
 
   return (
     <div className="space-y-6">
@@ -42,32 +38,35 @@ export default async function ProposalsPage({
         description="Write a proposal from a qualified lead. Open the lead and choose “Write a proposal”."
       />
 
-      <nav aria-label="Filter by status" className="flex flex-wrap gap-2">
-        <Link
-          href="/admin/proposals"
-          className={status ? chipIdle : chipActive}
-          aria-current={status ? undefined : "true"}
-        >
-          All <span className="tabular-nums">({total})</span>
-        </Link>
-        {PROPOSAL_STATUSES.map((s) => (
-          <Link
-            key={s}
-            href={`/admin/proposals?status=${s}`}
-            className={status === s ? chipActive : chipIdle}
-            aria-current={status === s ? "true" : undefined}
-          >
-            {PROPOSAL_STATUS_LABELS[s]} <span className="tabular-nums">({counts[s]})</span>
-          </Link>
-        ))}
-      </nav>
+      <SearchBar
+        basePath="/admin/proposals"
+        q={filters.q}
+        placeholder="Title or reference"
+        hasFilters={filtered}
+        selects={[
+          {
+            name: "status",
+            label: "Status",
+            value: filters.status,
+            allLabel: "Any status",
+            options: PROPOSAL_STATUSES.map((value) => ({
+              value,
+              label: `${PROPOSAL_STATUS_LABELS[value]} (${list.counts[value]})`,
+            })),
+          },
+        ]}
+      />
 
       <Card>
-        {rows.length === 0 ? (
+        {list.rows.length === 0 ? (
           <div className="p-5">
             <EmptyState
-              title={status ? "No proposals with that status" : "No proposals yet"}
-              description="Proposals appear here once you write one from a qualified lead."
+              title={filtered ? "No proposals match" : "No proposals yet"}
+              description={
+                filtered
+                  ? "Try a different search or filter."
+                  : "Proposals appear here once you write one from a qualified lead."
+              }
             />
           </div>
         ) : (
@@ -83,7 +82,7 @@ export default async function ProposalsPage({
               </tr>
             </thead>
             <tbody>
-              {rows.map((proposal) => {
+              {list.rows.map((proposal) => {
                 const shown = displayStatus(proposal);
                 return (
                   <tr key={proposal.id}>
@@ -110,6 +109,15 @@ export default async function ProposalsPage({
           </Table>
         )}
       </Card>
+
+      <Pagination
+        basePath="/admin/proposals"
+        params={{ q: filters.q, status: filters.status }}
+        page={list.page}
+        pageCount={list.pageCount}
+        total={list.total}
+        noun={["proposal", "proposals"]}
+      />
     </div>
   );
 }
