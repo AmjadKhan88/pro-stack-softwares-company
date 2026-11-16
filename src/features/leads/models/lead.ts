@@ -15,6 +15,8 @@ export interface LeadDoc {
   status: LeadStatus;
   /** Set when staff create (or later link) the client organization for this lead. */
   organizationId?: string;
+  /** Set when the lead came from the client portal: the id of the account that sent it. */
+  requestedBy: { type: String };
   source: string;
   ipHash?: string;
   archivedAt?: Date;
