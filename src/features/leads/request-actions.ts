@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireClientContext } from "@/features/organizations/context";
 import { logger } from "@/server/logger";
-import { getClientIpHash, hashIdentifier } from "@/server/security/ip";
+import { hashIdentifier } from "@/server/security/ip";
 import { consumeRateLimit } from "@/server/security/rate-limit";
 import {
   REQUEST_FIELDS,
@@ -53,7 +53,6 @@ export async function submitProjectRequestAction(
         values,
       };
     }
-    void getClientIpHash; // (IP is not stored for signed-in requests)
     const { referenceCode } = await createPortalRequest({
       organization,
       user: { id: user.id, name: user.name, email: user.email },

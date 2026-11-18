@@ -16,7 +16,9 @@
     "bootstrap:owner": "tsx --conditions=react-server --env-file=.env scripts/bootstrap-owner.ts",
     "seed:e2e": "tsx --conditions=react-server --env-file=.env scripts/seed-e2e.ts",
     "e2e:serve": "next build && next start -p 3100",
-    "test:e2e": "npm run seed:e2e && playwright test"
+    "test:e2e": "npm run seed:e2e && playwright test",
+    "demo:load": "tsx --conditions=react-server --env-file=.env scripts/demo-data.ts load",
+    "demo:remove": "tsx --conditions=react-server --env-file=.env scripts/demo-data.ts remove"
   },
   "dependencies": {
     "@better-auth/mongo-adapter": "^1.7.12",

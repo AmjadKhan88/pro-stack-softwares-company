@@ -16,7 +16,7 @@ export interface LeadDoc {
   /** Set when staff create (or later link) the client organization for this lead. */
   organizationId?: string;
   /** Set when the lead came from the client portal: the id of the account that sent it. */
-  requestedBy: { type: String };
+  requestedBy?: string;
   source: string;
   ipHash?: string;
   archivedAt?: Date;
@@ -33,6 +33,7 @@ const leadSchema = new Schema<LeadDoc>(
     timeframe: { type: String, enum: [...TIMEFRAMES] },
     message: { type: String, required: true, maxlength: 4000 },
     status: { type: String, enum: [...LEAD_STATUSES], default: "new", index: true },
+    requestedBy: { type: String },
     organizationId: { type: String, index: true },
     source: { type: String, required: true },
     ipHash: { type: String },

@@ -71,7 +71,15 @@
 - Menu visibility (filterNavForRole) is presentation only; the server enforces every page and action.
 
 ## ADR-013 — Account administration only through our own screens
+
 - The Better Auth admin plugin's raw HTTP endpoints (/api/auth/admin/*) are closed with a before-hook. Account changes (role, disable/enable) happen only through our server actions, which apply our rules first (pure, tested functions) and then change the user record, delete sessions / project assignments and write the audit record in ONE native MongoDB transaction.
 - Rules: only owner/admin; nobody changes their own role or status; owners are protected (admins can never touch them; the last active owner can't be changed by anyone); admins can't touch or grant admin; ownership is never granted here; client accounts never switch to or from staff roles.
 - Disabling uses Better Auth's own `banned` flag and deletes all sessions immediately. Moving to a role that can't be on project teams removes team memberships.
 - Linking an existing client account to an organization needs clients.manage and is audited; one organization per account.
+
+## ADR-014 — Dashboards are role-scoped summaries over the same access rules as the lists
+- dashboardSections(role) (pure, tested) decides which numbers a role gets; each is built from data that role may open elsewhere. A developer's project numbers use visibleProjectIds(), the same rule as the project list.
+- The client overview starts from the organization on the signed-in account and re-derives deliverables from that organization's projects.
+- Client project requests create a lead already linked to the client's organization (source "client-portal", requestedBy set from the session), rate-limited to 5 per person per day, with the lead, history note and audit entry in one transaction.
+- Clients see requests in plain wording (Received / In review / Accepted / Closed), never the internal pipeline.
+- Demo data is marked isDemo, named "[Demo] ...", uses @demo.invalid accounts, requires typing the database name, and refuses to run in production or with indexing enabled.

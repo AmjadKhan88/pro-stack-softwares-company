@@ -1,65 +1,62 @@
+import { Pagination } from "@/components/lists/pagination";
+import { SearchBar } from "@/components/lists/search-bar";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, Td, Th } from "@/components/ui/table";
-import { listAuditLogs } from "@/features/audit/service";
+import { AUDIT_LABELS } from "@/features/audit/labels";
+import { listAuditLogsPaged } from "@/features/audit/list-service";
+import { AUDIT_ACTIONS } from "@/features/audit/types";
+import { parseAuditFilters } from "@/features/lists/params";
+import { formatDateTimeUtc } from "@/lib/format";
 import { requirePermission } from "@/server/auth/session";
 
 export const metadata = { title: "Audit log" };
 
-const labels: Record<string, string> = {
-  "owner.bootstrapped": "Owner account created",
-  "invitation.created": "Invitation created",
-  "invitation.revoked": "Invitation revoked",
-  "invitation.accepted": "Invitation accepted",
-  "organization.created": "Organization created",
-  "organization.member_added": "Member added to organization",
-  "lead.status_changed": "Lead status changed",
-  "proposal.created": "Proposal created",
-  "proposal.sent": "Proposal sent",
-  "proposal.withdrawn": "Proposal withdrawn",
-  "proposal.reopened": "Proposal reopened",
-  "proposal.accepted": "Proposal accepted",
-  "proposal.declined": "Proposal declined",
-  "project.created": "Project created",
-  "project.status_changed": "Project status changed",
-  "project.visibility_changed": "Client visibility changed",
-  "milestone.created": "Milestone added",
-  "milestone.status_changed": "Milestone status changed",
-  "deliverable.created": "Deliverable added",
-  "deliverable.status_changed": "Deliverable status changed",
-  "deliverable.review_submitted": "Deliverable submitted for review",
-  "deliverable.review_withdrawn": "Review submission withdrawn",
-  "deliverable.review_approved": "Deliverable approved by client",
-  "deliverable.review_changes_requested": "Client requested changes",
-  "project.member_assigned": "Team member assigned",
-  "project.member_removed": "Team member removed",
-  "user.role_changed": "Account role changed",
-  "user.disabled": "Account disabled",
-  "user.enabled": "Account re-enabled",
-};
-
-function formatTime(date: Date) {
-  return `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`;
-}
-
-export default async function AuditLogsPage() {
+export default async function AuditLogsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requirePermission("audit.read", "/admin/audit-logs");
-  const rows = await listAuditLogs();
+  const filters = parseAuditFilters(await searchParams);
+  const list = await listAuditLogsPaged(filters);
+  const filtered = Boolean(filters.q || filters.action);
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Platform"
         title="Audit log"
-        description="Who did what, and when. Showing the 100 most recent privileged actions."
+        description="Who did what, and when. Every privileged action is recorded here."
       />
+
+      <SearchBar
+        basePath="/admin/audit-logs"
+        q={filters.q}
+        placeholder="Who did it (email)"
+        hasFilters={filtered}
+        selects={[
+          {
+            name: "action",
+            label: "Action",
+            value: filters.action,
+            allLabel: "Any action",
+            options: AUDIT_ACTIONS.map((value) => ({ value, label: AUDIT_LABELS[value] })),
+          },
+        ]}
+      />
+
       <Card>
-        {rows.length === 0 ? (
+        {list.rows.length === 0 ? (
           <div className="p-5">
             <EmptyState
-              title="Nothing recorded yet"
-              description="Privileged actions, such as sending an invitation, appear here."
+              title={filtered ? "Nothing matches" : "Nothing recorded yet"}
+              description={
+                filtered
+                  ? "Try a different search or action."
+                  : "Privileged actions, such as sending an invitation, appear here."
+              }
             />
           </div>
         ) : (
@@ -73,10 +70,10 @@ export default async function AuditLogsPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              {list.rows.map((row) => (
                 <tr key={row.id}>
-                  <Td className="whitespace-nowrap tabular-nums">{formatTime(row.createdAt)}</Td>
-                  <Td>{labels[row.action] ?? row.action}</Td>
+                  <Td className="whitespace-nowrap tabular-nums">{formatDateTimeUtc(row.createdAt)}</Td>
+                  <Td>{AUDIT_LABELS[row.action] ?? row.action}</Td>
                   <Td>{row.actorEmail ?? "System"}</Td>
                   <Td className="text-muted-foreground">
                     {row.targetType ? `${row.targetType} ${row.targetId?.slice(-6) ?? ""}` : "—"}
@@ -87,6 +84,15 @@ export default async function AuditLogsPage() {
           </Table>
         )}
       </Card>
+
+      <Pagination
+        basePath="/admin/audit-logs"
+        params={{ q: filters.q, action: filters.action }}
+        page={list.page}
+        pageCount={list.pageCount}
+        total={list.total}
+        noun={["entry", "entries"]}
+      />
     </div>
   );
 }
