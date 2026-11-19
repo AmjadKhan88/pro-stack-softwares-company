@@ -31,4 +31,10 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   "user.role_changed": "Account role changed",
   "user.disabled": "Account disabled",
   "user.enabled": "Account re-enabled",
+  "content.created": "Content created",
+  "content.published": "Content published",
+  "content.unpublished": "Content unpublished",
+  "content.archived": "Content archived",
+  "content.unarchived": "Content restored from archive",
+  "content.revision_restored": "Earlier content version restored",
 };

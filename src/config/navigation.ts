@@ -106,11 +106,17 @@ export const adminNav: NavGroup[] = [
     label: "Website",
     items: [
       {
-        label: "Content",
-        href: "/admin/content/pages",
+        label: "Services",
+        href: "/admin/content/services",
         icon: "content",
-        ready: false,
-        phase: 6,
+        ready: true,
+        anyOf: ["content.edit"],
+      },
+      {
+        label: "Case studies",
+        href: "/admin/content/projects",
+        icon: "content",
+        ready: true,
         anyOf: ["content.edit"],
       },
       {

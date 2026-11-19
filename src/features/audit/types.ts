@@ -29,6 +29,12 @@ export const AUDIT_ACTIONS = [
   "user.disabled",
   "user.enabled",
   "lead.created_from_portal",
+  "content.created",
+  "content.published",
+  "content.unpublished",
+  "content.archived",
+  "content.unarchived",
+  "content.revision_restored",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

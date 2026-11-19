@@ -40,6 +40,8 @@ describe("navigation shells", () => {
       "/admin",
       "/admin/audit-logs",
       "/admin/clients",
+      "/admin/content/projects",
+      "/admin/content/services",
       "/admin/leads",
       "/admin/projects",
       "/admin/proposals",
