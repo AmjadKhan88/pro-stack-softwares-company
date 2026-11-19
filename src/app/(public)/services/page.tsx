@@ -21,7 +21,9 @@ export default async function ServicesPage() {
         title="What we build"
         description="Software for real business problems, from first idea to a working release."
       >
-        <DemoNotice>Draft service descriptions. Replace them with your real offering.</DemoNotice>
+        {services.some((s) => s.isDemo) ? (
+          <DemoNotice>Draft service descriptions. Replace them with your real offering.</DemoNotice>
+        ) : null}
       </PageIntro>
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-8">
         <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

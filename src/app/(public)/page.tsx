@@ -101,7 +101,9 @@ export default async function HomePage() {
               All work →
             </Link>
           </div>
-          <DemoNotice>Layout examples only. Real projects will replace these.</DemoNotice>
+          {studies.some((c) => c.isDemo) ? (
+            <DemoNotice>Layout examples only. Real projects will replace these.</DemoNotice>
+          ) : null}
           <ul className="grid gap-4 md:grid-cols-2">
             {studies.map((c) => (
               <li key={c.slug}>

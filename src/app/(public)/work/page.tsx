@@ -22,7 +22,9 @@ export default async function WorkPage() {
         title="Selected projects"
         description="How we approach problems and what we build."
       >
-        <DemoNotice>These are sample layouts only. No real client work is shown yet.</DemoNotice>
+        {studies.some((c) => c.isDemo) ? (
+          <DemoNotice>These are sample layouts only. No real client work is shown yet.</DemoNotice>
+        ) : null}
       </PageIntro>
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-8">
         <ul className="grid gap-4 md:grid-cols-2">
