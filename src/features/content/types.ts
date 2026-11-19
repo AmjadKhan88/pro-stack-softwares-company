@@ -1,9 +1,17 @@
+/** Optional search-engine overrides set in the admin. */
+export interface PublicSeo {
+  title?: string;
+  description?: string;
+  noindex: boolean;
+}
+
 export interface Service {
   slug: string;
   title: string;
   summary: string;
   description: string;
   deliverables: string[];
+  seo?: PublicSeo;
   isDemo: boolean;
 }
 
@@ -19,6 +27,7 @@ export interface CaseStudy {
   /** Only real, verified results. Leave empty until you have evidence. */
   outcomes: string[];
   serviceSlug?: string;
+  seo?: PublicSeo;
   isDemo: boolean;
 }
 

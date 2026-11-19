@@ -3,6 +3,7 @@ const STATIC_PATHS = ["/", "/services", "/work", "/process", "/about", "/faq", "
 interface Publishable {
   slug: string;
   isDemo: boolean;
+  seo?: { noindex: boolean };
 }
 
 /** Sample (demo) detail pages are never listed. Only real, published content reaches the sitemap. */
@@ -17,8 +18,8 @@ export function buildSitemapEntries({
 }): { url: string }[] {
   const paths = [
     ...STATIC_PATHS,
-    ...services.filter((s) => !s.isDemo).map((s) => `/services/${s.slug}`),
-    ...caseStudies.filter((c) => !c.isDemo).map((c) => `/work/${c.slug}`),
+    ...services.filter((s) => !s.isDemo && !s.seo?.noindex).map((s) => `/services/${s.slug}`),
+    ...caseStudies.filter((c) => !c.isDemo && !c.seo?.noindex).map((c) => `/work/${c.slug}`),
   ];
   return paths.map((path) => ({ url: `${siteUrl}${path}` }));
 }
