@@ -78,8 +78,20 @@
 - Linking an existing client account to an organization needs clients.manage and is audited; one organization per account.
 
 ## ADR-014 — Dashboards are role-scoped summaries over the same access rules as the lists
+
 - dashboardSections(role) (pure, tested) decides which numbers a role gets; each is built from data that role may open elsewhere. A developer's project numbers use visibleProjectIds(), the same rule as the project list.
 - The client overview starts from the organization on the signed-in account and re-derives deliverables from that organization's projects.
 - Client project requests create a lead already linked to the client's organization (source "client-portal", requestedBy set from the session), rate-limited to 5 per person per day, with the lead, history note and audit entry in one transaction.
 - Clients see requests in plain wording (Received / In review / Accepted / Closed), never the internal pipeline.
 - Demo data is marked isDemo, named "[Demo] ...", uses @demo.invalid accounts, requires typing the database name, and refuses to run in production or with indexing enabled.
+
+## ADR-015 — Content is edited as drafts and published as snapshots
+- ContentEntry holds an editable draft and a separate published snapshot. Public pages read only the snapshot, through "use cache" functions tagged per content type; publishing/unpublishing call updateTag() in the server action so the website refreshes immediately.
+- A save increments draftVersion; saves, restores and publishes carry the version the editor saw, so a stale window can't overwrite a colleague or publish unreviewed text.
+- Saving allows incomplete drafts; publishing runs validateForPublish(). Case-study outcomes are published only with an explicit "these are real" confirmation, and rendering re-checks the flag.
+- The live address (publishedSlug) changes only on publish; changing it creates a permanent redirect pointing at the entry, so renames never chain. Unpublishing removes the page.
+- Content is plain text and lists, never HTML. Public mapping is defensive: malformed stored data is skipped, not rendered broken.
+- Lifecycle: draft, published, archived. No hard deletes. Archive only from draft.
+- Real published content replaces sample content per type; sample content is never shown once NEXT_PUBLIC_ALLOW_INDEXING=true.
+- next build reads published content from MongoDB (the build needs the database).
+- Audited: create, publish, unpublish, archive, unarchive, revision restore. Every save is in the revision history with who and when.

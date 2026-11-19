@@ -24,3 +24,5 @@
 | NEXT_PUBLIC_ALLOW_INDEXING        | yes     | false | until launch                            |
 
 Rules: `lib/env.ts` validates with Zod at startup; missing integration keys produce a clear setup message. `.env*` is git-ignored; ship `.env.example` with empty values.
+
+“next build reads published content from MongoDB, so MONGODB_URI must be set at build time.”
