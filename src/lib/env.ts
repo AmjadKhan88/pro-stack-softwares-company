@@ -12,6 +12,15 @@ const serverSchema = z.object({
   EMAIL_FROM: z.string().min(3).optional(),
   OWNER_BOOTSTRAP_EMAIL: z.email().optional(),
   AUTH_SIGNIN_MAX_PER_MINUTE: z.coerce.number().int().min(1).max(1000).optional(),
+  CLOUDINARY_CLOUD_NAME: z
+    .string()
+    .regex(/^[a-zA-Z0-9_-]{2,64}$/)
+    .optional(),
+  CLOUDINARY_API_KEY: z
+    .string()
+    .regex(/^\d{6,32}$/)
+    .optional(),
+  CLOUDINARY_API_SECRET: z.string().min(10).max(128).optional(),
 });
 
 const publicSchema = z.object({
@@ -75,5 +84,20 @@ export function requireAuthEnv(source: NodeJS.ProcessEnv = process.env) {
   return {
     secret: env.BETTER_AUTH_SECRET,
     baseURL: getPublicEnv(source).NEXT_PUBLIC_APP_URL.replace(/\/+$/, ""),
+  };
+}
+
+/** Cloudinary credentials, or a clear setup message. The secret never leaves the server. */
+export function requireCloudinaryEnv(source: NodeJS.ProcessEnv = process.env) {
+  const env = getServerEnv(source);
+  if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) {
+    throw new Error(
+      "Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in .env (see ENVIRONMENT.md).",
+    );
+  }
+  return {
+    cloudName: env.CLOUDINARY_CLOUD_NAME,
+    apiKey: env.CLOUDINARY_API_KEY,
+    apiSecret: env.CLOUDINARY_API_SECRET,
   };
 }
