@@ -1,12 +1,22 @@
-import type { CaseStudy, PublicSeo, Service } from "@/features/content/types";
+import type { CaseStudy, PublicImage, PublicSeo, Service } from "@/features/content/types";
 import type { RawForm } from "./schema";
 import type { ContentType } from "./types";
+
+/** The few facts the website needs about a library image. Resolved when a page is rendered. */
+export interface PublishedAsset {
+  id: string;
+  url: string;
+  width: number;
+  height: number;
+  alt: string;
+}
 
 /** What the public site reads: the published snapshot only. */
 export interface PublishedItem {
   slug: string;
   data: unknown;
   seo: unknown;
+  assets?: Record<string, PublishedAsset>;
 }
 
 // Stored content is read defensively: malformed data can't crash a public page.
@@ -26,13 +36,26 @@ export const list = (value: unknown, max = 50): string[] =>
         .slice(0, max)
     : [];
 
-export function readSeo(value: unknown): PublicSeo {
+/** The image for an id, or nothing if it is unknown, unavailable or has no description. Never throws. */
+function resolveImage(
+  id: unknown,
+  assets: Record<string, PublishedAsset> | undefined,
+): PublicImage | undefined {
+  if (typeof id !== "string" || !assets || !Object.hasOwn(assets, id)) return undefined;
+  const asset = assets[id];
+  if (!asset.url || !asset.alt) return undefined;
+  return { url: asset.url, width: asset.width, height: asset.height, alt: asset.alt };
+}
+
+export function readSeo(value: unknown, assets?: Record<string, PublishedAsset>): PublicSeo {
   const seo = asRecord(value);
   const title = str(seo.metaTitle, 70).trim();
   const description = str(seo.metaDescription, 170).trim();
+  const ogImage = resolveImage(seo.ogImageAssetId, assets);
   return {
     ...(title ? { title } : {}),
     ...(description ? { description } : {}),
+    ...(ogImage ? { ogImage } : {}),
     noindex: seo.noindex === true,
   };
 }
@@ -43,6 +66,7 @@ export function toPublicService(item: PublishedItem): Service | null {
   const title = str(d.title).trim();
   const summary = str(d.summary).trim();
   if (!title || !summary) return null;
+  const image = resolveImage(d.imageAssetId, item.assets);
   return {
     slug: item.slug,
     title,
@@ -50,7 +74,8 @@ export function toPublicService(item: PublishedItem): Service | null {
     description: str(d.description),
     deliverables: list(d.deliverables, 20),
     isDemo: false,
-    seo: readSeo(item.seo),
+    seo: readSeo(item.seo, item.assets),
+    ...(image ? { image } : {}),
   };
 }
 
@@ -59,6 +84,7 @@ export function toPublicCaseStudy(item: PublishedItem): CaseStudy | null {
   const title = str(d.title).trim();
   const summary = str(d.summary).trim();
   if (!title || !summary) return null;
+  const image = resolveImage(d.imageAssetId, item.assets);
   return {
     slug: item.slug,
     title,
@@ -72,7 +98,8 @@ export function toPublicCaseStudy(item: PublishedItem): CaseStudy | null {
     outcomes: d.outcomesVerified === true ? list(d.outcomes, 10) : [],
     serviceSlug: str(d.serviceSlug).trim() || undefined,
     isDemo: false,
-    seo: readSeo(item.seo),
+    seo: readSeo(item.seo, item.assets),
+    ...(image ? { image } : {}),
   };
 }
 
@@ -84,9 +111,11 @@ export function toFormValues(type: ContentType, slug: string, data: unknown, seo
     slug,
     title: str(d.title),
     summary: str(d.summary),
+    imageAssetId: str(d.imageAssetId),
     metaTitle: str(s.metaTitle),
     metaDescription: str(s.metaDescription),
     noindex: s.noindex === true ? "on" : "",
+    ogImageAssetId: str(s.ogImageAssetId),
   };
   if (type === "service") {
     return { ...base, description: str(d.description), deliverables: list(d.deliverables).join("\n") };

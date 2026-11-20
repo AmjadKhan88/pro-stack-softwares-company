@@ -23,6 +23,12 @@ const slugField = z
     "Use 3 to 80 lowercase letters, numbers and single hyphens, for example web-applications.",
   );
 
+/** A library image: empty means none, otherwise it must be a well-formed id. Existence is checked on save. */
+const imageId = z.preprocess(
+  emptyToUndefined,
+  z.string().refine(isObjectId, "Choose an image from the library.").optional(),
+);
+
 function text(label: string, max: number) {
   return z
     .string()
@@ -47,6 +53,7 @@ const seoFields = {
   metaTitle: optionalText(70, "Keep the page title under 70 characters."),
   metaDescription: optionalText(170, "Keep the description under 170 characters."),
   noindex: checkbox,
+  ogImageAssetId: imageId,
 };
 
 const serviceFormSchema = z.strictObject({
@@ -59,6 +66,7 @@ const serviceFormSchema = z.strictObject({
   summary: text("the summary", 300),
   description: text("the description", 4000),
   deliverables: lines("deliverable", 20, 200),
+  imageAssetId: imageId,
   ...seoFields,
 });
 
@@ -78,6 +86,7 @@ const caseStudyFormSchema = z.strictObject({
   outcomes: lines("outcome", 10, 300),
   outcomesVerified: checkbox,
   serviceSlug: z.preprocess(emptyToUndefined, slugField.optional()),
+  imageAssetId: imageId,
   ...seoFields,
 });
 
@@ -105,24 +114,32 @@ export function parseContentForm(type: ContentType, raw: RawForm): ParseResult {
   if (type === "service") {
     const result = serviceFormSchema.safeParse(raw);
     if (!result.success) return failure(result.error);
-    const { slug, metaTitle, metaDescription, noindex, ...data } = result.data;
+    const { slug, metaTitle, metaDescription, noindex, ogImageAssetId, ...data } = result.data;
     return {
       ok: true,
-      value: { slug, data: data satisfies ServiceData, seo: { metaTitle, metaDescription, noindex } },
+      value: {
+        slug,
+        data: data satisfies ServiceData,
+        seo: { metaTitle, metaDescription, noindex, ogImageAssetId },
+      },
     };
   }
   const result = caseStudyFormSchema.safeParse(raw);
   if (!result.success) return failure(result.error);
-  const { slug, metaTitle, metaDescription, noindex, ...data } = result.data;
+  const { slug, metaTitle, metaDescription, noindex, ogImageAssetId, ...data } = result.data;
   return {
     ok: true,
-    value: { slug, data: data satisfies CaseStudyData, seo: { metaTitle, metaDescription, noindex } },
+    value: {
+      slug,
+      data: data satisfies CaseStudyData,
+      seo: { metaTitle, metaDescription, noindex, ogImageAssetId },
+    },
   };
 }
 
-const SEO_FORM_FIELDS = ["metaTitle", "metaDescription", "noindex"] as const;
+const SEO_FORM_FIELDS = ["metaTitle", "metaDescription", "noindex", "ogImageAssetId"] as const;
 export const CONTENT_FORM_FIELDS: Record<ContentType, readonly string[]> = {
-  service: ["slug", "title", "summary", "description", "deliverables", ...SEO_FORM_FIELDS],
+  service: ["slug", "title", "summary", "description", "deliverables", "imageAssetId", ...SEO_FORM_FIELDS],
   case_study: [
     "slug",
     "title",
@@ -135,6 +152,7 @@ export const CONTENT_FORM_FIELDS: Record<ContentType, readonly string[]> = {
     "outcomes",
     "outcomesVerified",
     "serviceSlug",
+    "imageAssetId",
     ...SEO_FORM_FIELDS,
   ],
 };

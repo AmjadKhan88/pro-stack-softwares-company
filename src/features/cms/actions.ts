@@ -31,6 +31,7 @@ import type { ContentActionState, ContentFormState } from "./state";
 import { CONTENT_TYPE_INFO, isContentType } from "./types";
 
 const who = (actor: SessionUser) => ({ id: actor.id, email: actor.email });
+const IMAGE_UNAVAILABLE = "A chosen image is no longer available. Choose another, or remove it.";
 
 /** Runs a staff action after checking the permission on the server, with consistent error handling. */
 async function run(
@@ -76,7 +77,13 @@ export async function createContentAction(
     }
     const result = await createEntry({ type, parsed: parsed.value, actor: who(actor) });
     if (!result.ok) {
-      return { status: "error", message: SLUG_TAKEN, fieldErrors: { slug: SLUG_TAKEN }, values: raw };
+      const slugTaken = result.reason === "slug-taken";
+      return {
+        status: "error",
+        message: slugTaken ? SLUG_TAKEN : IMAGE_UNAVAILABLE,
+        fieldErrors: slugTaken ? { slug: SLUG_TAKEN } : undefined,
+        values: raw,
+      };
     }
     createdId = result.id;
   } catch (error) {
@@ -122,6 +129,7 @@ export async function saveContentAction(
         archived: "This item is archived. Restore it before editing.",
         conflict: CONFLICT,
         "slug-taken": SLUG_TAKEN,
+        "image-unavailable": IMAGE_UNAVAILABLE,
       } as const;
       return {
         status: "error",

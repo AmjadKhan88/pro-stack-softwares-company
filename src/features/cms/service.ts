@@ -19,6 +19,7 @@ import {
   type ContentType,
   type SeoData,
 } from "./types";
+import { MediaAsset } from "@/features/media/models/media-asset";
 
 function isDuplicateKey(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === 11000;
@@ -66,9 +67,22 @@ async function addRevision(
   );
 }
 
+/** Every image an item points at must exist and be active. Returns the ids that aren't. */
+async function unavailableAssets(parsed: ParsedContent): Promise<string[]> {
+  const ids = [(parsed.data as { imageAssetId?: string }).imageAssetId, parsed.seo.ogImageAssetId].filter(
+    (id): id is string => Boolean(id),
+  );
+  if (ids.length === 0) return [];
+  const found = await MediaAsset.find({ _id: { $in: ids }, status: "active" })
+    .select("_id")
+    .lean();
+  const available = new Set(found.map((doc) => String(doc._id)));
+  return ids.filter((id) => !available.has(id));
+}
+
 // ---------------------------------------------------------------- writes
 
-export type CreateResult = { ok: true; id: string } | { ok: false; reason: "slug-taken" };
+export type CreateResult = { ok: false; reason: "slug-taken" | "image-unavailable" };
 
 export async function createEntry(input: {
   type: ContentType;
@@ -78,6 +92,7 @@ export async function createEntry(input: {
   await connectToDatabase();
   const { slug, data, seo } = input.parsed;
   const draft = data as unknown as Record<string, unknown>;
+  if ((await unavailableAssets(input.parsed)).length > 0) return { ok: false, reason: "image-unavailable" };
   try {
     return await withSession<CreateResult>(async (session) => {
       const [created] = await ContentEntry.create(
@@ -115,7 +130,8 @@ export async function createEntry(input: {
 }
 
 export type SaveResult =
-  { ok: true } | { ok: false; reason: "not-found" | "archived" | "conflict" | "slug-taken" };
+  | { ok: true }
+  | { ok: false; reason: "not-found" | "archived" | "conflict" | "slug-taken" | "image-unavailable" };
 
 /** Saves the draft only. It never touches what the public site shows. */
 export async function saveDraft(input: {
@@ -180,8 +196,15 @@ export async function publishEntry(input: {
       if (entry.draftVersion !== input.expectedVersion) return { ok: false, reason: "conflict" };
 
       const problems = validateForPublish(entry.type, entry.draft as unknown as ContentData);
+      const missingImages = await unavailableAssets({
+        slug: entry.slug,
+        data: entry.draft as unknown as ContentData,
+        seo: entry.draftSeo,
+      });
+      if (missingImages.length > 0) {
+        problems.push("A chosen image is no longer available. Choose another, or remove it.");
+      }
       if (problems.length > 0) return { ok: false, reason: "incomplete", problems };
-
       const now = new Date();
       const previousSlug = entry.publishedSlug;
       const updated = await ContentEntry.updateOne(
