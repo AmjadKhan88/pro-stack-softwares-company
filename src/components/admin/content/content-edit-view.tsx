@@ -20,6 +20,7 @@ import {
 import { formatDateTimeUtc } from "@/lib/format";
 import { requirePermission } from "@/server/auth/session";
 import { can } from "@/server/policies/permissions";
+import { getMediaViewsByIds } from "@/features/media/service";
 
 export async function ContentEditView({
   type,
@@ -35,10 +36,16 @@ export async function ContentEditView({
   // A case study can't be opened under the services address, or the other way round.
   if (!entry || entry.type !== type) notFound();
 
-  const [revisions, serviceOptions] = await Promise.all([
+  const imageId = typeof entry.data.imageAssetId === "string" ? entry.data.imageAssetId : undefined;
+  const ogValue = (entry.seo as { ogImageAssetId?: unknown } | null)?.ogImageAssetId;
+  const ogImageId = typeof ogValue === "string" ? ogValue : undefined;
+
+  const [revisions, serviceOptions, media] = await Promise.all([
     listRevisions(entry.id),
     type === "case_study" ? listPublishedServiceOptions() : Promise.resolve([]),
+    getMediaViewsByIds([imageId, ogImageId].filter((id): id is string => Boolean(id))),
   ]);
+
   const canPublish = can(user.role, "content.publish");
   const editable = isEditable(entry.status);
   const title = typeof entry.data.title === "string" && entry.data.title ? entry.data.title : entry.slug;
@@ -68,6 +75,10 @@ export async function ContentEditView({
                 entry={{ id: entry.id, version: entry.draftVersion, live: entry.status === "published" }}
                 defaults={toFormValues(type, entry.slug, entry.data, entry.seo)}
                 serviceOptions={serviceOptions}
+                images={{
+                  image: imageId ? { id: imageId, view: media[imageId] ?? null } : undefined,
+                  ogImage: ogImageId ? { id: ogImageId, view: media[ogImageId] ?? null } : undefined,
+                }}
               />
             ) : (
               <p className="text-muted-foreground text-sm leading-relaxed">

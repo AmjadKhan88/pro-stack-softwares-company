@@ -1,10 +1,12 @@
 import Link from "next/link";
 import type { CaseStudy, Service } from "@/features/content/types";
 import { DemoNotice } from "@/components/public-site/demo-notice";
+import { ContentImage } from "@/components/public-site/content-image";
 
 export function ServiceDetailBody({ service, related }: { service: Service; related: CaseStudy[] }) {
   return (
     <>
+      {service.image ? <ContentImage image={service.image} /> : null}
       <h1 className="max-w-3xl text-4xl font-semibold tracking-tight">{service.title}</h1>
       <p className="text-muted-foreground max-w-2xl text-base leading-relaxed">{service.description}</p>
       {service.isDemo ? <DemoNotice>Draft description for this service.</DemoNotice> : null}

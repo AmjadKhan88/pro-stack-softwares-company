@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { CaseStudy, Service } from "@/features/content/types";
 import { Badge } from "@/components/ui/badge";
 import { DemoNotice } from "@/components/public-site/demo-notice";
+import { ContentImage } from "@/components/public-site/content-image";
 
 /** Paragraphs are separated by blank lines. Text is rendered as text, never as HTML. */
 function Paragraphs({ text }: { text: string }) {
@@ -23,6 +24,7 @@ function Paragraphs({ text }: { text: string }) {
 export function CaseStudyBody({ study, service }: { study: CaseStudy; service: Service | null }) {
   return (
     <>
+      {study.image ? <ContentImage image={study.image} /> : null}
       <header className="space-y-3">
         <Badge>{study.category}</Badge>
         <h1 className="text-4xl font-semibold tracking-tight">{study.title}</h1>

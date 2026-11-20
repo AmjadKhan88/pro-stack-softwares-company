@@ -1,15 +1,23 @@
 "use client";
 
 import { useActionState } from "react";
+import { MediaField } from "@/components/admin/media/media-field";
 import { createContentAction, saveContentAction } from "@/features/cms/actions";
 import type { RawForm } from "@/features/cms/schema";
 import { slugify } from "@/features/cms/slug";
 import { initialContentFormState } from "@/features/cms/state";
 import { CONTENT_TYPE_INFO, type ContentType } from "@/features/cms/types";
+import type { MediaView } from "@/features/media/types";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+
+/** An image the editor already chose: its id, and the image itself if it is still available. */
+export interface ChosenImage {
+  id: string;
+  view: MediaView | null;
+}
 
 interface Props {
   type: ContentType;
@@ -19,9 +27,10 @@ interface Props {
   defaults: RawForm;
   /** Live services, for a case study's "related service". */
   serviceOptions?: { slug: string; title: string }[];
+  images?: { image?: ChosenImage; ogImage?: ChosenImage };
 }
 
-export function ContentForm({ type, mode, entry, defaults, serviceOptions = [] }: Props) {
+export function ContentForm({ type, mode, entry, defaults, serviceOptions = [], images = {} }: Props) {
   const info = CONTENT_TYPE_INFO[type];
   const [state, formAction, pending] = useActionState(
     mode === "create" ? createContentAction : saveContentAction,
@@ -86,6 +95,21 @@ export function ContentForm({ type, mode, entry, defaults, serviceOptions = [] }
       >
         {(c) => <Textarea name="summary" rows={3} maxLength={300} defaultValue={v.summary} {...c} />}
       </FormField>
+
+      <div className="space-y-1">
+        <MediaField
+          name="imageAssetId"
+          label="Main image"
+          hint="Shown at the top of the page. Choose from the media library."
+          initialId={images.image?.id ?? v.imageAssetId}
+          initial={images.image?.view ?? null}
+        />
+        {errors.imageAssetId ? (
+          <p role="alert" className="text-danger text-sm font-medium">
+            {errors.imageAssetId}
+          </p>
+        ) : null}
+      </div>
 
       {type === "service" ? (
         <>
@@ -175,7 +199,7 @@ export function ContentForm({ type, mode, entry, defaults, serviceOptions = [] }
       )}
 
       <fieldset className="border-border space-y-4 rounded-lg border p-4">
-        <legend className="px-1 text-sm font-medium">Search engines</legend>
+        <legend className="px-1 text-sm font-medium">Search engines and sharing</legend>
         <FormField
           id="c-meta-title"
           label="Page title"
@@ -200,6 +224,20 @@ export function ContentForm({ type, mode, entry, defaults, serviceOptions = [] }
             />
           )}
         </FormField>
+        <div className="space-y-1">
+          <MediaField
+            name="ogImageAssetId"
+            label="Social sharing image"
+            hint="Shown when the page is shared. Optional: the main image is used if you leave this empty."
+            initialId={images.ogImage?.id ?? v.ogImageAssetId}
+            initial={images.ogImage?.view ?? null}
+          />
+          {errors.ogImageAssetId ? (
+            <p role="alert" className="text-danger text-sm font-medium">
+              {errors.ogImageAssetId}
+            </p>
+          ) : null}
+        </div>
         <label className="flex items-start gap-2 text-sm leading-relaxed">
           <input type="checkbox" name="noindex" defaultChecked={v.noindex === "on"} className="mt-1" />
           <span>Hide this page from search engines (it stays on the website and out of the sitemap).</span>
