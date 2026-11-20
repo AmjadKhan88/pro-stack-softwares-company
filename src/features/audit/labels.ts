@@ -37,4 +37,8 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   "content.archived": "Content archived",
   "content.unarchived": "Content restored from archive",
   "content.revision_restored": "Earlier content version restored",
+  "media.uploaded": "Image uploaded",
+  "media.updated": "Image description changed",
+  "media.archived": "Image archived",
+  "media.restored": "Image restored",
 };

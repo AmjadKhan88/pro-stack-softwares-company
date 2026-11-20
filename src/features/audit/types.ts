@@ -35,6 +35,10 @@ export const AUDIT_ACTIONS = [
   "content.archived",
   "content.unarchived",
   "content.revision_restored",
+  "media.uploaded",
+  "media.updated",
+  "media.archived",
+  "media.restored",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

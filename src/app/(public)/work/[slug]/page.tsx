@@ -12,6 +12,7 @@ import {
 import { Breadcrumbs } from "@/components/public-site/breadcrumbs";
 import { CaseStudyBody } from "@/components/public-site/case-study-detail";
 import { CtaBand } from "@/components/public-site/cta-band";
+import { ogImageMeta } from "@/features/media/urls";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -26,11 +27,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const study = await getCaseStudyBySlug(slug);
   if (!study) return {};
+  const title = study.seo?.title ?? study.title;
+  const description = study.seo?.description ?? study.summary;
+  const share = ogImageMeta(study.seo?.ogImage ?? study.image);
   return {
-    title: study.seo?.title ?? study.title,
-    description: study.seo?.description ?? study.summary,
+    title,
+    description,
     alternates: { canonical: `/work/${study.slug}` },
     robots: study.isDemo || study.seo?.noindex ? { index: false, follow: true } : undefined,
+    ...(share
+      ? {
+          openGraph: {
+            type: "website",
+            title,
+            description,
+            url: `/work/${study.slug}`,
+            images: share,
+          },
+          twitter: {
+            card: "summary_large_image" as const,
+            title,
+            description,
+            images: share.map((i) => i.url),
+          },
+        }
+      : {}),
   };
 }
 

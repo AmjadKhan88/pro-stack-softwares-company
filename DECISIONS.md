@@ -86,6 +86,7 @@
 - Demo data is marked isDemo, named "[Demo] ...", uses @demo.invalid accounts, requires typing the database name, and refuses to run in production or with indexing enabled.
 
 ## ADR-015 — Content is edited as drafts and published as snapshots
+
 - ContentEntry holds an editable draft and a separate published snapshot. Public pages read only the snapshot, through "use cache" functions tagged per content type; publishing/unpublishing call updateTag() in the server action so the website refreshes immediately.
 - A save increments draftVersion; saves, restores and publishes carry the version the editor saw, so a stale window can't overwrite a colleague or publish unreviewed text.
 - Saving allows incomplete drafts; publishing runs validateForPublish(). Case-study outcomes are published only with an explicit "these are real" confirmation, and rendering re-checks the flag.
@@ -95,3 +96,12 @@
 - Real published content replaces sample content per type; sample content is never shown once NEXT_PUBLIC_ALLOW_INDEXING=true.
 - next build reads published content from MongoDB (the build needs the database).
 - Audited: create, publish, unpublish, archive, unarchive, revision restore. Every save is in the revision history with who and when.
+
+## ADR-016 — Media: server-chosen names, server-verified uploads, public library
+- Uploads follow: authenticate + authorize (content.edit) + rate limit -> validate declared type/extension/size -> create a one-use, 20-minute ticket bound to the uploader with a SERVER-chosen random public id (psc/site/<24 hex>) -> signed (SHA-256) direct browser upload -> the server asks Cloudinary's Admin API what was actually stored and verifies type, format, size, dimensions, name and cloud -> only then records the asset. A failed check deletes the file from Cloudinary.
+- The browser never supplies a URL or public id as proof of anything; the database record is built from Cloudinary's own answer. The API secret never leaves the server.
+- Allowed: JPEG, PNG, WebP, <= 5 MB, 100-6000 px. SVG is excluded (scriptable).
+- Content references images by asset id; public pages resolve them at render time inside the cached read (tagged "media"), so alt-text changes and archiving apply without republishing. Images in use cannot be archived. Nothing is hard-deleted.
+- Next.js image optimization is allowed only for this cloud's /image/upload path (images.remotePatterns). A report-only CSP already lists api.cloudinary.com and res.cloudinary.com; enforcement and nonces are Phase 8.
+- The library is public delivery. Confidential client files use private, signed delivery (Part 6D).
+- Share images are delivered as 1200x630 cropped transformations; a page's own image is used when no share image is set.

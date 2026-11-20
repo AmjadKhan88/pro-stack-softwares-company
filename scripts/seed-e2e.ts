@@ -219,6 +219,24 @@ async function main() {
       { ...item, projectId: E2E_IDS.projectB, title: "Deliverable B secret", clientVisible: true },
     ]);
 
+    // A library image, so the picker can be tested without uploading anything to Cloudinary.
+    const cloud = process.env.CLOUDINARY_CLOUD_NAME ?? "demo";
+    await db.collection("mediaassets").insertOne({
+      _id: oid(E2E_IDS.mediaAsset),
+      publicId: "psc/site/e2e000000000000000000001",
+      secureUrl: `https://res.cloudinary.com/${cloud}/image/upload/v1/psc/site/e2e000000000000000000001.jpg`,
+      format: "jpg",
+      bytes: 1000,
+      width: 1200,
+      height: 800,
+      altText: "E2E sample image",
+      originalFilename: "e2e-sample.jpg",
+      status: "active",
+      uploadedBy: "e2e-seed",
+      uploadedByEmail: "seed@e2e.test",
+      ...stamps,
+    });
+
     // The developer is assigned to project A only.
     const developer = await db.collection("user").findOne({ email: E2E_ACCOUNTS.developer.email });
     await db.collection("projectmembers").insertOne({

@@ -12,6 +12,7 @@ import {
 import { Breadcrumbs } from "@/components/public-site/breadcrumbs";
 import { CtaBand } from "@/components/public-site/cta-band";
 import { ServiceDetailBody } from "@/components/public-site/service-detail";
+import { ogImageMeta } from "@/features/media/urls";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -26,11 +27,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const service = await getServiceBySlug(slug);
   if (!service) return {};
+  const title = service.seo?.title ?? service.title;
+  const description = service.seo?.description ?? service.summary;
+  const share = ogImageMeta(service.seo?.ogImage ?? service.image);
   return {
-    title: service.seo?.title ?? service.title,
-    description: service.seo?.description ?? service.summary,
+    title,
+    description,
     alternates: { canonical: `/services/${service.slug}` },
     robots: service.isDemo || service.seo?.noindex ? { index: false, follow: true } : undefined,
+    ...(share
+      ? {
+          openGraph: {
+            type: "website",
+            title,
+            description,
+            url: `/services/${service.slug}`,
+            images: share,
+          },
+          twitter: {
+            card: "summary_large_image" as const,
+            title,
+            description,
+            images: share.map((i) => i.url),
+          },
+        }
+      : {}),
   };
 }
 

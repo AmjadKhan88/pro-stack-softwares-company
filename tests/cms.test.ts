@@ -163,6 +163,8 @@ describe("parsing the editor form", () => {
     fd.set("status", "published");
     fd.set("publishedSlug", "hijack");
     fd.set("$ACTION_ID_x", "1");
+    fd.set("imageAssetId", "");
+    fd.set("ogImageAssetId", "");
     const picked = pickFields(fd, CONTENT_FORM_FIELDS.service);
     expect(Object.keys(picked).sort()).toEqual([...CONTENT_FORM_FIELDS.service].sort());
     expect(parseContentForm("service", picked).ok).toBe(true);

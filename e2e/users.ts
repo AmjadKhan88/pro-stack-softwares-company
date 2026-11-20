@@ -30,4 +30,5 @@ export const E2E_IDS = {
   projectB: "e2e000000000000000000007",
   fakeProposalA: "e2e00000000000000000000a",
   fakeProposalB: "e2e00000000000000000000b",
+  mediaAsset: "e2e00000000000000000000c",
 } as const;
