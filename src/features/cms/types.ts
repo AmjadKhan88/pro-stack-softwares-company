@@ -71,6 +71,7 @@ export interface SeoData {
   metaTitle?: string;
   metaDescription?: string;
   noindex: boolean;
+  ogImageAssetId?: string;
 }
 
 export interface ServiceData {
@@ -78,6 +79,7 @@ export interface ServiceData {
   summary: string;
   description: string;
   deliverables: string[];
+  imageAssetId?: string;
 }
 
 export interface CaseStudyData {
@@ -92,6 +94,7 @@ export interface CaseStudyData {
   outcomes: string[];
   outcomesVerified: boolean;
   serviceSlug?: string;
+  imageAssetId?: string;
 }
 
 export type ContentData = ServiceData | CaseStudyData;

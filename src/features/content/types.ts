@@ -3,6 +3,7 @@ export interface PublicSeo {
   title?: string;
   description?: string;
   noindex: boolean;
+  ogImage?: PublicImage;
 }
 
 export interface Service {
@@ -12,6 +13,7 @@ export interface Service {
   description: string;
   deliverables: string[];
   seo?: PublicSeo;
+  image?: PublicImage;
   isDemo: boolean;
 }
 
@@ -28,6 +30,7 @@ export interface CaseStudy {
   outcomes: string[];
   serviceSlug?: string;
   seo?: PublicSeo;
+  image?: PublicImage;
   isDemo: boolean;
 }
 
@@ -40,4 +43,11 @@ export interface FaqItem {
   question: string;
   answer: string;
   isDemo: boolean;
+}
+
+export interface PublicImage {
+  url: string;
+  width: number;
+  height: number;
+  alt: string;
 }

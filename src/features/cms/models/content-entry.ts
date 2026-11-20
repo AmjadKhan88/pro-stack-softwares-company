@@ -33,6 +33,7 @@ const seoSchema = new Schema<SeoData>(
     metaTitle: { type: String, maxlength: 70 },
     metaDescription: { type: String, maxlength: 170 },
     noindex: { type: Boolean, default: false },
+    ogImageAssetId: { type: String },
   },
   { _id: false },
 );
