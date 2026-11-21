@@ -7,16 +7,18 @@ import type { MediaView } from "@/features/media/types";
 import { Button } from "@/components/ui/button";
 
 interface Props {
-  /** The form field that receives the chosen image's id ("" for none). */
-  name: string;
+  /** The form field that receives the chosen image's id ("" for none). Leave out when using onChange. */
+  name?: string;
   label: string;
   hint?: string;
   /** Set when something is already chosen. `initial` is null if that image is no longer available. */
   initialId?: string;
   initial?: MediaView | null;
+  /** Called whenever the choice changes (null = removed). */
+  onChange?: (asset: MediaView | null) => void;
 }
 
-export function MediaField({ name, label, hint, initialId, initial }: Props) {
+export function MediaField({ name, label, hint, initialId, initial, onChange }: Props) {
   const [selected, setSelected] = useState<MediaView | null>(initial ?? null);
   const [selectedId, setSelectedId] = useState(initial?.id ?? initialId ?? "");
   const [open, setOpen] = useState(false);
@@ -42,6 +44,13 @@ export function MediaField({ name, label, hint, initialId, initial }: Props) {
     setSelected(asset);
     setSelectedId(asset.id);
     setOpen(false);
+    onChange?.(asset);
+  }
+
+  function remove() {
+    setSelected(null);
+    setSelectedId("");
+    onChange?.(null);
   }
 
   const unavailable = selectedId !== "" && selected === null;
@@ -49,7 +58,7 @@ export function MediaField({ name, label, hint, initialId, initial }: Props) {
   return (
     <div className="space-y-2">
       <p className="text-[13px] font-medium">{label}</p>
-      <input type="hidden" name={name} value={selectedId} />
+      {name ? <input type="hidden" name={name} value={selectedId} /> : null}
 
       {selected ? (
         <div className="border-border bg-surface flex items-center gap-3 rounded-lg border p-2">
@@ -85,15 +94,7 @@ export function MediaField({ name, label, hint, initialId, initial }: Props) {
           {selected || unavailable ? "Change image" : "Choose image"}
         </Button>
         {selectedId ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setSelected(null);
-              setSelectedId("");
-            }}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={remove}>
             Remove image
           </Button>
         ) : null}

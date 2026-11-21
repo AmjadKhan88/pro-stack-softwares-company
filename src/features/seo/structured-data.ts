@@ -68,3 +68,34 @@ export function faqSchema(items: { question: string; answer: string }[]) {
     })),
   };
 }
+
+/** Render only for real articles. Dates are included only when we genuinely have them. */
+export function articleSchema(
+  siteUrl: string,
+  article: {
+    slug: string;
+    title: string;
+    summary: string;
+    publishedAt: string | null;
+    updatedAt: string | null;
+    author?: string;
+    imageUrl?: string;
+  },
+) {
+  const url = `${siteUrl}/insights/${article.slug}`;
+  return {
+    "@context": CONTEXT,
+    "@type": "BlogPosting",
+    headline: article.title.slice(0, 110),
+    description: article.summary,
+    url,
+    mainEntityOfPage: url,
+    ...(article.publishedAt ? { datePublished: article.publishedAt } : {}),
+    ...(article.updatedAt ? { dateModified: article.updatedAt } : {}),
+    author: article.author
+      ? { "@type": "Person", name: article.author }
+      : { "@id": `${siteUrl}/#organization` },
+    publisher: { "@id": `${siteUrl}/#organization` },
+    ...(article.imageUrl ? { image: article.imageUrl } : {}),
+  };
+}
