@@ -14,11 +14,11 @@ export async function ContentNewView({ type }: { type: ContentType }) {
   return (
     <div className="space-y-6">
       <Link href={info.adminPath} className="text-accent text-sm font-medium hover:underline">
-        ← All {info.plural.toLowerCase()}
+        ← All {info.nounPlural}
       </Link>
       <PageHeader
         eyebrow="Website"
-        title={`New ${info.singular.toLowerCase()}`}
+        title={`New ${info.noun}`}
         description="It starts as a draft. Nothing is public until you publish."
       />
       <Card>

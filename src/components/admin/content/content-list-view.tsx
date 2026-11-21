@@ -19,6 +19,14 @@ import {
 import { formatDateUtc } from "@/lib/format";
 import { requirePermission } from "@/server/auth/session";
 
+const DESCRIPTIONS: Record<ContentType, string> = {
+  service: "Write services as drafts, preview them, and publish when they're ready.",
+  case_study: "Write case studies as drafts, preview them, and publish when they're ready.",
+  article: "Write articles for the Insights section. Nothing is public until you publish.",
+  page: "Pages such as Privacy and Terms. Publishing a page with the address “about” or “process” replaces that built-in page.",
+  faq: "Questions and answers for the FAQ page. Published entries replace the sample ones.",
+};
+
 export async function ContentListView({
   type,
   searchParams,
@@ -31,16 +39,17 @@ export async function ContentListView({
   const filters = parseContentFilters(await searchParams);
   const list = await listEntries(type, filters);
   const filtered = Boolean(filters.q || filters.status);
+  const isFaq = type === "faq";
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Website"
         title={info.plural}
-        description={`Write ${info.plural.toLowerCase()} as drafts, preview them, and publish when they're ready.`}
+        description={DESCRIPTIONS[type]}
         actions={
           <Button asChild variant="accent">
-            <Link href={`${info.adminPath}/new`}>New {info.singular.toLowerCase()}</Link>
+            <Link href={`${info.adminPath}/new`}>New {info.noun}</Link>
           </Button>
         }
       />
@@ -48,7 +57,7 @@ export async function ContentListView({
       <SearchBar
         basePath={info.adminPath}
         q={filters.q}
-        placeholder="Title or URL slug"
+        placeholder={isFaq ? "Question" : "Title or URL slug"}
         hasFilters={filtered}
         selects={[
           {
@@ -65,11 +74,11 @@ export async function ContentListView({
         {list.rows.length === 0 ? (
           <div className="p-5">
             <EmptyState
-              title={filtered ? "Nothing matches" : `No ${info.plural.toLowerCase()} yet`}
+              title={filtered ? "Nothing matches" : `No ${info.nounPlural} yet`}
               description={
                 filtered
                   ? "Try a different search or status."
-                  : `Create the first one. Until something is published, the website shows sample ${info.plural.toLowerCase()}.`
+                  : `Create the first one. Nothing is public until you publish it.`
               }
             />
           </div>
@@ -77,8 +86,8 @@ export async function ContentListView({
           <Table>
             <thead>
               <tr>
-                <Th>Title</Th>
-                <Th>URL slug</Th>
+                <Th>{isFaq ? "Question" : "Title"}</Th>
+                {isFaq ? null : <Th>URL slug</Th>}
                 <Th>Status</Th>
                 <Th>Updated</Th>
               </tr>
@@ -91,7 +100,7 @@ export async function ContentListView({
                       {row.title}
                     </Link>
                   </Td>
-                  <Td className="text-muted-foreground font-mono text-xs">{row.slug}</Td>
+                  {isFaq ? null : <Td className="text-muted-foreground font-mono text-xs">{row.slug}</Td>}
                   <Td>
                     <span className="flex flex-wrap items-center gap-2">
                       <StatusPill status={CONTENT_STATUS_TONE[row.status]}>
@@ -116,7 +125,7 @@ export async function ContentListView({
         page={list.page}
         pageCount={list.pageCount}
         total={list.total}
-        noun={[info.singular.toLowerCase(), info.plural.toLowerCase()]}
+        noun={[info.noun, info.nounPlural]}
       />
     </div>
   );

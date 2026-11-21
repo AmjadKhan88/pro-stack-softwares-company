@@ -2,11 +2,12 @@
 
 import { useActionState } from "react";
 import { MediaField } from "@/components/admin/media/media-field";
+import { BlockEditor } from "@/components/admin/content/block-editor";
 import { createContentAction, saveContentAction } from "@/features/cms/actions";
 import type { RawForm } from "@/features/cms/schema";
 import { slugify } from "@/features/cms/slug";
 import { initialContentFormState } from "@/features/cms/state";
-import { CONTENT_TYPE_INFO, type ContentType } from "@/features/cms/types";
+import { publicUrlFor, type ContentType } from "@/features/cms/types";
 import type { MediaView } from "@/features/media/types";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
@@ -27,17 +28,29 @@ interface Props {
   defaults: RawForm;
   /** Live services, for a case study's "related service". */
   serviceOptions?: { slug: string; title: string }[];
-  images?: { image?: ChosenImage; ogImage?: ChosenImage };
+  images?: { image?: ChosenImage; ogImage?: ChosenImage; blocks?: Record<string, MediaView> };
 }
 
-export function ContentForm({ type, mode, entry, defaults, serviceOptions = [], images = {} }: Props) {
-  const info = CONTENT_TYPE_INFO[type];
+/** A short fingerprint, so the fields can be rebuilt whenever the saved content changes. */
+function hashString(value: string): string {
+  let hash = 5381;
+  for (let index = 0; index < value.length; index += 1)
+    hash = ((hash << 5) + hash + value.charCodeAt(index)) | 0;
+  return (hash >>> 0).toString(36);
+}
+
+export function ContentForm(props: Props) {
+  const { type, mode, entry, defaults } = props;
   const [state, formAction, pending] = useActionState(
     mode === "create" ? createContentAction : saveContentAction,
     initialContentFormState,
   );
   const errors = state.status === "error" ? (state.fieldErrors ?? {}) : {};
-  const v: RawForm = (state.status !== "idle" && state.values) || defaults;
+  // Only a failed save keeps what was typed. After a success, or after restoring an older version, the form
+  // shows exactly what the server now has.
+  const v: RawForm = state.status === "error" && state.values ? state.values : defaults;
+  // The fields are rebuilt whenever the saved content changes, so they can never show stale text.
+  const signature = `${hashString(JSON.stringify(defaults))}:${entry?.version ?? 0}`;
 
   return (
     <form action={formAction} noValidate aria-busy={pending} className="space-y-6">
@@ -45,15 +58,50 @@ export function ContentForm({ type, mode, entry, defaults, serviceOptions = [], 
       {entry ? <input type="hidden" name="entryId" value={entry.id} /> : null}
       {entry ? <input type="hidden" name="expectedVersion" value={entry.version} /> : null}
 
-      <FormField id="c-title" label="Title" error={errors.title} required>
+      <ContentFields key={signature} {...props} v={v} errors={errors} />
+
+      {state.status === "error" ? (
+        <p role="alert" className="text-danger text-sm font-medium">
+          {state.message}
+        </p>
+      ) : null}
+      {state.status === "success" ? (
+        <p role="status" className="text-success text-sm font-medium">
+          {state.message}
+        </p>
+      ) : null}
+      <Button type="submit" variant="accent" size="lg" disabled={pending}>
+        {pending ? "Saving…" : mode === "create" ? "Create draft" : "Save draft"}
+      </Button>
+    </form>
+  );
+}
+
+function ContentFields({
+  type,
+  mode,
+  entry,
+  serviceOptions = [],
+  images = {},
+  v,
+  errors,
+}: Props & { v: RawForm; errors: Record<string, string> }) {
+  const hasSlug = type !== "faq";
+  const hasMainImage = type === "service" || type === "case_study" || type === "article";
+  const hasSeo = type !== "faq";
+  const hasBlocks = type === "article" || type === "page";
+
+  return (
+    <>
+      <FormField id="c-title" label={type === "faq" ? "Question" : "Title"} error={errors.title} required>
         {(c) => (
           <Input
             name="title"
-            maxLength={120}
+            maxLength={type === "faq" ? 200 : 120}
             defaultValue={v.title}
             onBlur={(event) => {
               // A new item gets a suggested URL slug from its title, which can be changed.
-              if (mode !== "create") return;
+              if (mode !== "create" || !hasSlug) return;
               const slug = document.getElementById("c-slug") as HTMLInputElement | null;
               if (slug && slug.value.trim() === "") slug.value = slugify(event.target.value);
             }}
@@ -62,54 +110,75 @@ export function ContentForm({ type, mode, entry, defaults, serviceOptions = [], 
         )}
       </FormField>
 
-      <FormField
-        id="c-slug"
-        label="URL slug"
-        hint={
-          entry?.live
-            ? `Live address: ${info.publicPath}/…  Changing it takes effect when you publish, and the old address will redirect.`
-            : `Lowercase letters, numbers and hyphens. Public address: ${info.publicPath}/your-slug`
-        }
-        error={errors.slug}
-        required
-      >
-        {(c) => <Input name="slug" maxLength={80} defaultValue={v.slug} {...c} />}
-      </FormField>
+      {hasSlug ? (
+        <FormField
+          id="c-slug"
+          label="URL slug"
+          hint={
+            entry?.live
+              ? `Changing it takes effect when you publish, and the old address will redirect. Live now at ${publicUrlFor(type, "…")}`
+              : `Lowercase letters, numbers and hyphens. Public address: ${publicUrlFor(type, "your-slug")}`
+          }
+          error={errors.slug}
+          required
+        >
+          {(c) => <Input name="slug" maxLength={80} defaultValue={v.slug} {...c} />}
+        </FormField>
+      ) : null}
 
-      {type === "case_study" ? (
+      {type === "case_study" || type === "article" ? (
         <FormField
           id="c-category"
           label="Category"
-          hint="For example Web application."
+          hint={type === "article" ? "For example Engineering." : "For example Web application."}
           error={errors.category}
         >
           {(c) => <Input name="category" maxLength={60} defaultValue={v.category} {...c} />}
         </FormField>
       ) : null}
 
-      <FormField
-        id="c-summary"
-        label="Summary"
-        hint="One or two sentences shown on listing pages."
-        error={errors.summary}
-      >
-        {(c) => <Textarea name="summary" rows={3} maxLength={300} defaultValue={v.summary} {...c} />}
-      </FormField>
+      {type === "article" ? (
+        <FormField
+          id="c-author"
+          label="Author"
+          hint="Optional. Use a real name, or leave empty to credit the company."
+          error={errors.author}
+        >
+          {(c) => <Input name="author" maxLength={80} defaultValue={v.author} {...c} />}
+        </FormField>
+      ) : null}
 
-      <div className="space-y-1">
-        <MediaField
-          name="imageAssetId"
-          label="Main image"
-          hint="Shown at the top of the page. Choose from the media library."
-          initialId={images.image?.id ?? v.imageAssetId}
-          initial={images.image?.view ?? null}
-        />
-        {errors.imageAssetId ? (
-          <p role="alert" className="text-danger text-sm font-medium">
-            {errors.imageAssetId}
-          </p>
-        ) : null}
-      </div>
+      {type !== "faq" ? (
+        <FormField
+          id="c-summary"
+          label="Summary"
+          hint={
+            type === "page"
+              ? "One or two sentences under the title. Optional."
+              : "One or two sentences shown on listing pages."
+          }
+          error={errors.summary}
+        >
+          {(c) => <Textarea name="summary" rows={3} maxLength={300} defaultValue={v.summary} {...c} />}
+        </FormField>
+      ) : null}
+
+      {hasMainImage ? (
+        <div className="space-y-1">
+          <MediaField
+            name="imageAssetId"
+            label="Main image"
+            hint="Shown at the top of the page. Choose from the media library."
+            initialId={images.image?.id ?? v.imageAssetId}
+            initial={images.image?.view ?? null}
+          />
+          {errors.imageAssetId ? (
+            <p role="alert" className="text-danger text-sm font-medium">
+              {errors.imageAssetId}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {type === "service" ? (
         <>
@@ -132,7 +201,9 @@ export function ContentForm({ type, mode, entry, defaults, serviceOptions = [], 
             {(c) => <Textarea name="deliverables" rows={5} defaultValue={v.deliverables} {...c} />}
           </FormField>
         </>
-      ) : (
+      ) : null}
+
+      {type === "case_study" ? (
         <>
           <FormField
             id="c-challenge"
@@ -196,67 +267,88 @@ export function ContentForm({ type, mode, entry, defaults, serviceOptions = [], 
             )}
           </FormField>
         </>
-      )}
+      ) : null}
 
-      <fieldset className="border-border space-y-4 rounded-lg border p-4">
-        <legend className="px-1 text-sm font-medium">Search engines and sharing</legend>
-        <FormField
-          id="c-meta-title"
-          label="Page title"
-          hint="Optional. Up to 70 characters. Defaults to the title."
-          error={errors.metaTitle}
-        >
-          {(c) => <Input name="metaTitle" maxLength={70} defaultValue={v.metaTitle} {...c} />}
-        </FormField>
-        <FormField
-          id="c-meta-description"
-          label="Page description"
-          hint="Optional. Up to 170 characters. Defaults to the summary."
-          error={errors.metaDescription}
-        >
-          {(c) => (
-            <Textarea
-              name="metaDescription"
-              rows={2}
-              maxLength={170}
-              defaultValue={v.metaDescription}
-              {...c}
+      {hasBlocks ? (
+        <BlockEditor initialJson={v.blocks} images={images.blocks ?? {}} error={errors.blocks} />
+      ) : null}
+
+      {type === "faq" ? (
+        <>
+          <FormField
+            id="c-answer"
+            label="Answer"
+            hint="You can use **bold**, - lists and [links](https://example.com)."
+            error={errors.answer}
+          >
+            {(c) => <Textarea name="answer" rows={7} maxLength={4000} defaultValue={v.answer} {...c} />}
+          </FormField>
+          <FormField
+            id="c-position"
+            label="Order"
+            hint="A number from 0 to 999. Lower numbers come first."
+            error={errors.position}
+          >
+            {(c) => (
+              <Input
+                name="position"
+                inputMode="numeric"
+                maxLength={3}
+                defaultValue={v.position ?? "0"}
+                {...c}
+              />
+            )}
+          </FormField>
+        </>
+      ) : null}
+
+      {hasSeo ? (
+        <fieldset className="border-border space-y-4 rounded-lg border p-4">
+          <legend className="px-1 text-sm font-medium">Search engines and sharing</legend>
+          <FormField
+            id="c-meta-title"
+            label="Page title"
+            hint="Optional. Up to 70 characters. Defaults to the title."
+            error={errors.metaTitle}
+          >
+            {(c) => <Input name="metaTitle" maxLength={70} defaultValue={v.metaTitle} {...c} />}
+          </FormField>
+          <FormField
+            id="c-meta-description"
+            label="Page description"
+            hint="Optional. Up to 170 characters. Defaults to the summary."
+            error={errors.metaDescription}
+          >
+            {(c) => (
+              <Textarea
+                name="metaDescription"
+                rows={2}
+                maxLength={170}
+                defaultValue={v.metaDescription}
+                {...c}
+              />
+            )}
+          </FormField>
+          <div className="space-y-1">
+            <MediaField
+              name="ogImageAssetId"
+              label="Social sharing image"
+              hint="Shown when the page is shared. Optional: the main image is used if you leave this empty."
+              initialId={images.ogImage?.id ?? v.ogImageAssetId}
+              initial={images.ogImage?.view ?? null}
             />
-          )}
-        </FormField>
-        <div className="space-y-1">
-          <MediaField
-            name="ogImageAssetId"
-            label="Social sharing image"
-            hint="Shown when the page is shared. Optional: the main image is used if you leave this empty."
-            initialId={images.ogImage?.id ?? v.ogImageAssetId}
-            initial={images.ogImage?.view ?? null}
-          />
-          {errors.ogImageAssetId ? (
-            <p role="alert" className="text-danger text-sm font-medium">
-              {errors.ogImageAssetId}
-            </p>
-          ) : null}
-        </div>
-        <label className="flex items-start gap-2 text-sm leading-relaxed">
-          <input type="checkbox" name="noindex" defaultChecked={v.noindex === "on"} className="mt-1" />
-          <span>Hide this page from search engines (it stays on the website and out of the sitemap).</span>
-        </label>
-      </fieldset>
-
-      {state.status === "error" ? (
-        <p role="alert" className="text-danger text-sm font-medium">
-          {state.message}
-        </p>
+            {errors.ogImageAssetId ? (
+              <p role="alert" className="text-danger text-sm font-medium">
+                {errors.ogImageAssetId}
+              </p>
+            ) : null}
+          </div>
+          <label className="flex items-start gap-2 text-sm leading-relaxed">
+            <input type="checkbox" name="noindex" defaultChecked={v.noindex === "on"} className="mt-1" />
+            <span>Hide this page from search engines (it stays on the website and out of the sitemap).</span>
+          </label>
+        </fieldset>
       ) : null}
-      {state.status === "success" ? (
-        <p role="status" className="text-success text-sm font-medium">
-          {state.message}
-        </p>
-      ) : null}
-      <Button type="submit" variant="accent" size="lg" disabled={pending}>
-        {pending ? "Saving…" : mode === "create" ? "Create draft" : "Save draft"}
-      </Button>
-    </form>
+    </>
   );
 }

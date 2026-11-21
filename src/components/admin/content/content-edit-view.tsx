@@ -7,6 +7,7 @@ import { StatusPill } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { blockAssetIds } from "@/features/cms/blocks";
 import { toFormValues } from "@/features/cms/mapping";
 import { getEntry, listPublishedServiceOptions, listRevisions } from "@/features/cms/service";
 import {
@@ -15,12 +16,13 @@ import {
   CONTENT_STATUS_TONE,
   CONTENT_TYPE_INFO,
   isEditable,
+  publicUrlFor,
   type ContentType,
 } from "@/features/cms/types";
+import { getMediaViewsByIds } from "@/features/media/service";
 import { formatDateTimeUtc } from "@/lib/format";
 import { requirePermission } from "@/server/auth/session";
 import { can } from "@/server/policies/permissions";
-import { getMediaViewsByIds } from "@/features/media/service";
 
 export async function ContentEditView({
   type,
@@ -33,27 +35,28 @@ export async function ContentEditView({
   const info = CONTENT_TYPE_INFO[type];
   const user = await requirePermission("content.edit", `${info.adminPath}/${id}`);
   const entry = await getEntry(id);
-  // A case study can't be opened under the services address, or the other way round.
+  // An article can't be opened under the pages address, or the other way round.
   if (!entry || entry.type !== type) notFound();
 
   const imageId = typeof entry.data.imageAssetId === "string" ? entry.data.imageAssetId : undefined;
   const ogValue = (entry.seo as { ogImageAssetId?: unknown } | null)?.ogImageAssetId;
   const ogImageId = typeof ogValue === "string" ? ogValue : undefined;
+  const inBlocks = blockAssetIds(entry.data.blocks);
 
   const [revisions, serviceOptions, media] = await Promise.all([
     listRevisions(entry.id),
     type === "case_study" ? listPublishedServiceOptions() : Promise.resolve([]),
-    getMediaViewsByIds([imageId, ogImageId].filter((id): id is string => Boolean(id))),
+    getMediaViewsByIds([imageId, ogImageId, ...inBlocks].filter((value): value is string => Boolean(value))),
   ]);
-
   const canPublish = can(user.role, "content.publish");
   const editable = isEditable(entry.status);
   const title = typeof entry.data.title === "string" && entry.data.title ? entry.data.title : entry.slug;
+  const liveUrl = entry.publishedSlug ? publicUrlFor(type, entry.publishedSlug) : null;
 
   return (
     <div className="space-y-6">
       <Link href={info.adminPath} className="text-accent text-sm font-medium hover:underline">
-        ← All {info.plural.toLowerCase()}
+        ← All {info.nounPlural}
       </Link>
       <PageHeader
         eyebrow={info.singular}
@@ -78,6 +81,7 @@ export async function ContentEditView({
                 images={{
                   image: imageId ? { id: imageId, view: media[imageId] ?? null } : undefined,
                   ogImage: ogImageId ? { id: ogImageId, view: media[ogImageId] ?? null } : undefined,
+                  blocks: media,
                 }}
               />
             ) : (
@@ -98,14 +102,11 @@ export async function ContentEditView({
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="space-y-2">
-                {entry.publishedSlug ? (
+                {liveUrl ? (
                   <p>
                     <span className="text-muted-foreground">Live at: </span>
-                    <Link
-                      href={`${info.publicPath}/${entry.publishedSlug}`}
-                      className="text-accent font-medium hover:underline"
-                    >
-                      {info.publicPath}/{entry.publishedSlug}
+                    <Link href={liveUrl} className="text-accent font-medium hover:underline">
+                      {liveUrl}
                     </Link>
                   </p>
                 ) : null}
