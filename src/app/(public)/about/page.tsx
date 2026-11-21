@@ -1,13 +1,20 @@
 import type { Metadata } from "next";
 import { siteConfig } from "@/config/site";
+import { CmsPageView } from "@/components/public-site/cms-page-view";
 import { CtaBand } from "@/components/public-site/cta-band";
 import { PageIntro } from "@/components/public-site/page-intro";
+import { cmsPageMetadata } from "@/features/content/metadata";
+import { getPage } from "@/features/content/repository";
 
-export const metadata: Metadata = {
-  title: "About",
-  description: `About ${siteConfig.name}, a software company based in ${siteConfig.location}.`,
-  alternates: { canonical: "/about" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getPage("about");
+  if (page) return cmsPageMetadata(page);
+  return {
+    title: "About",
+    description: `About ${siteConfig.name}, a software company based in ${siteConfig.location}.`,
+    alternates: { canonical: "/about" },
+  };
+}
 
 const principles = [
   { title: "Technical competence", body: "We choose proven tools and build things that are maintainable." },
@@ -22,7 +29,9 @@ const principles = [
   { title: "Careful delivery", body: "We test what matters and release deliberately." },
 ];
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const page = await getPage("about");
+  if (page) return <CmsPageView page={page} />;
   return (
     <>
       <PageIntro
@@ -51,7 +60,8 @@ export default function AboutPage() {
           </h2>
           <p className="border-border text-muted-foreground mt-4 rounded-xl border border-dashed p-5 text-sm leading-relaxed">
             Placeholder: add the story of the company, who is behind it and why it exists. Only include facts
-            you can stand behind.
+            you can stand behind. (Publish a page with the address &ldquo;about&rdquo; in the admin to replace
+            this page.)
           </p>
         </section>
       </div>

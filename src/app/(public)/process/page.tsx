@@ -1,16 +1,26 @@
 import type { Metadata } from "next";
-import { getProcessSteps } from "@/features/content/repository";
+import { CmsPageView } from "@/components/public-site/cms-page-view";
 import { CtaBand } from "@/components/public-site/cta-band";
 import { DemoNotice } from "@/components/public-site/demo-notice";
 import { PageIntro } from "@/components/public-site/page-intro";
+import { cmsPageMetadata } from "@/features/content/metadata";
+import { getPage, getProcessSteps } from "@/features/content/repository";
 
-export const metadata: Metadata = {
-  title: "Process",
-  description: "How a project runs from discovery to launch and support.",
-  alternates: { canonical: "/process" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getPage("process");
+  if (page) return cmsPageMetadata(page);
+  return {
+    title: "Process",
+    description: "How a project runs from discovery to launch and support.",
+    alternates: { canonical: "/process" },
+  };
+}
 
 export default async function ProcessPage() {
+  // A page made in the admin with the address "process" replaces this one.
+  const page = await getPage("process");
+  if (page) return <CmsPageView page={page} />;
+
   const steps = await getProcessSteps();
   return (
     <>

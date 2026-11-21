@@ -1,6 +1,8 @@
-import { cacheLife } from "next/cache";
+import Link from "next/link";
+import { cacheLife, cacheTag } from "next/cache";
 import { Mail, MessageCircle, Phone } from "lucide-react";
 import { siteConfig } from "@/config/site";
+import { getArticles, getPublishedPages } from "@/features/content/repository";
 
 async function getCurrentYear() {
   "use cache";
@@ -8,8 +10,22 @@ async function getCurrentYear() {
   return new Date().getFullYear();
 }
 
+/** Links to pages that really exist: never a link that leads nowhere. */
+async function getFooterLinks() {
+  "use cache";
+  cacheTag("content");
+  cacheLife("hours");
+  const [pages, articles] = await Promise.all([getPublishedPages(), getArticles()]);
+  const has = (slug: string) => pages.some((page) => page.slug === slug);
+  return [
+    ...(articles.length > 0 ? [{ href: "/insights", label: "Insights" }] : []),
+    ...(has("privacy") ? [{ href: "/privacy", label: "Privacy" }] : []),
+    ...(has("terms") ? [{ href: "/terms", label: "Terms" }] : []),
+  ];
+}
+
 export async function PublicFooter() {
-  const year = await getCurrentYear();
+  const [year, links] = await Promise.all([getCurrentYear(), getFooterLinks()]);
   return (
     <footer className="border-border bg-surface border-t">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-8 md:grid-cols-[1.5fr_1fr]">
@@ -44,6 +60,22 @@ export async function PublicFooter() {
           </li>
         </ul>
       </div>
+      {links.length > 0 ? (
+        <nav aria-label="Footer" className="border-border border-t">
+          <ul className="mx-auto flex max-w-6xl flex-wrap gap-x-6 gap-y-2 px-4 py-4 text-sm sm:px-8">
+            {links.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className="text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ) : null}
       <div className="border-border text-muted-foreground border-t px-4 py-4 text-center text-xs">
         &copy; {year} {siteConfig.name}
       </div>
