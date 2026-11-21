@@ -1,15 +1,12 @@
-import type { CaseStudy, PublicImage, PublicSeo, Service } from "@/features/content/types";
+import type { Article, CaseStudy, CmsPage, FaqItem, PublicSeo, Service } from "@/features/content/types";
+import { editableBlocksJson, toPublicBlocks } from "./blocks";
+import { asRecord, list, resolveImage, str, type PublishedAsset } from "./read-helpers";
+import { plainText, wordCount } from "./richtext";
 import type { RawForm } from "./schema";
 import type { ContentType } from "./types";
 
-/** The few facts the website needs about a library image. Resolved when a page is rendered. */
-export interface PublishedAsset {
-  id: string;
-  url: string;
-  width: number;
-  height: number;
-  alt: string;
-}
+export { asRecord, list, str };
+export type { PublishedAsset };
 
 /** What the public site reads: the published snapshot only. */
 export interface PublishedItem {
@@ -17,34 +14,9 @@ export interface PublishedItem {
   data: unknown;
   seo: unknown;
   assets?: Record<string, PublishedAsset>;
-}
-
-// Stored content is read defensively: malformed data can't crash a public page.
-export const asRecord = (value: unknown): Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-
-export const str = (value: unknown, max = 10_000): string =>
-  typeof value === "string" ? value.slice(0, max) : "";
-
-export const list = (value: unknown, max = 50): string[] =>
-  Array.isArray(value)
-    ? value
-        .filter((item): item is string => typeof item === "string" && item.trim() !== "")
-        .map((item) => item.slice(0, 500))
-        .slice(0, max)
-    : [];
-
-/** The image for an id, or nothing if it is unknown, unavailable or has no description. Never throws. */
-function resolveImage(
-  id: unknown,
-  assets: Record<string, PublishedAsset> | undefined,
-): PublicImage | undefined {
-  if (typeof id !== "string" || !assets || !Object.hasOwn(assets, id)) return undefined;
-  const asset = assets[id];
-  if (!asset.url || !asset.alt) return undefined;
-  return { url: asset.url, width: asset.width, height: asset.height, alt: asset.alt };
+  /** ISO dates: when it first went live, and when it was last published. */
+  publishedAt?: string;
+  updatedAt?: string;
 }
 
 export function readSeo(value: unknown, assets?: Record<string, PublishedAsset>): PublicSeo {
@@ -103,10 +75,72 @@ export function toPublicCaseStudy(item: PublishedItem): CaseStudy | null {
   };
 }
 
+export function toPublicArticle(item: PublishedItem): Article | null {
+  const d = asRecord(item.data);
+  const title = str(d.title).trim();
+  const summary = str(d.summary).trim();
+  if (!title || !summary) return null;
+  const blocks = toPublicBlocks(d.blocks, item.assets);
+  const image = resolveImage(d.imageAssetId, item.assets);
+  const words = blocks.reduce(
+    (sum, block) => sum + (block.type === "richtext" ? wordCount(block.text) : 0),
+    0,
+  );
+  const author = str(d.author, 80).trim();
+  return {
+    slug: item.slug,
+    title,
+    summary,
+    category: str(d.category).trim() || "Article",
+    ...(author ? { author } : {}),
+    ...(image ? { image } : {}),
+    blocks,
+    publishedAt: item.publishedAt ?? null,
+    updatedAt: item.updatedAt ?? item.publishedAt ?? null,
+    readingMinutes: Math.max(1, Math.ceil(words / 200)),
+    seo: readSeo(item.seo, item.assets),
+  };
+}
+
+export function toPublicPage(item: PublishedItem): CmsPage | null {
+  const d = asRecord(item.data);
+  const title = str(d.title).trim();
+  if (!title) return null;
+  return {
+    slug: item.slug,
+    title,
+    summary: str(d.summary).trim(),
+    blocks: toPublicBlocks(d.blocks, item.assets),
+    updatedAt: item.updatedAt ?? item.publishedAt ?? null,
+    seo: readSeo(item.seo, item.assets),
+  };
+}
+
+export function toPublicFaq(item: PublishedItem): FaqItem | null {
+  const d = asRecord(item.data);
+  const question = str(d.title).trim();
+  const answer = str(d.answer, 4000).trim();
+  if (!question || !answer) return null;
+  const position = typeof d.position === "number" && Number.isFinite(d.position) ? d.position : 0;
+  return { question, answer, isDemo: false, position };
+}
+
+/** An FAQ answer as plain words (for search-engine data), with the formatting removed. */
+export const faqAnswerText = (answer: string): string => plainText(answer);
+
 /** Turns stored data back into form values, so the edit form shows what was saved. */
 export function toFormValues(type: ContentType, slug: string, data: unknown, seo: unknown): RawForm {
   const d = asRecord(data);
   const s = asRecord(seo);
+
+  if (type === "faq") {
+    return {
+      title: str(d.title),
+      answer: str(d.answer, 4000),
+      position: String(typeof d.position === "number" ? d.position : 0),
+    };
+  }
+
   const base: RawForm = {
     slug,
     title: str(d.title),
@@ -117,18 +151,29 @@ export function toFormValues(type: ContentType, slug: string, data: unknown, seo
     noindex: s.noindex === true ? "on" : "",
     ogImageAssetId: str(s.ogImageAssetId),
   };
-  if (type === "service") {
-    return { ...base, description: str(d.description), deliverables: list(d.deliverables).join("\n") };
+  switch (type) {
+    case "service":
+      return { ...base, description: str(d.description), deliverables: list(d.deliverables).join("\n") };
+    case "case_study":
+      return {
+        ...base,
+        category: str(d.category),
+        challenge: str(d.challenge),
+        approach: str(d.approach),
+        features: list(d.features).join("\n"),
+        stack: list(d.stack).join("\n"),
+        outcomes: list(d.outcomes).join("\n"),
+        outcomesVerified: d.outcomesVerified === true ? "on" : "",
+        serviceSlug: str(d.serviceSlug),
+      };
+    case "article":
+      return {
+        ...base,
+        category: str(d.category),
+        author: str(d.author),
+        blocks: editableBlocksJson(d.blocks),
+      };
+    case "page":
+      return { ...base, blocks: editableBlocksJson(d.blocks) };
   }
-  return {
-    ...base,
-    category: str(d.category),
-    challenge: str(d.challenge),
-    approach: str(d.approach),
-    features: list(d.features).join("\n"),
-    stack: list(d.stack).join("\n"),
-    outcomes: list(d.outcomes).join("\n"),
-    outcomesVerified: d.outcomesVerified === true ? "on" : "",
-    serviceSlug: str(d.serviceSlug),
-  };
 }

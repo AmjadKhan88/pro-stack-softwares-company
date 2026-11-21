@@ -20,6 +20,8 @@ import {
   type SeoData,
 } from "./types";
 import { MediaAsset } from "@/features/media/models/media-asset";
+import { randomBytes } from "node:crypto";
+import { blockAssetIds } from "./blocks";
 
 function isDuplicateKey(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === 11000;
@@ -68,21 +70,25 @@ async function addRevision(
 }
 
 /** Every image an item points at must exist and be active. Returns the ids that aren't. */
+/** Every image an item points at (main, sharing and inside blocks) must exist and be active. Returns the ids that aren't. */
 async function unavailableAssets(parsed: ParsedContent): Promise<string[]> {
-  const ids = [(parsed.data as { imageAssetId?: string }).imageAssetId, parsed.seo.ogImageAssetId].filter(
+  const data = parsed.data as { imageAssetId?: string; blocks?: unknown };
+  const ids = [data.imageAssetId, parsed.seo.ogImageAssetId, ...blockAssetIds(data.blocks)].filter(
     (id): id is string => Boolean(id),
   );
   if (ids.length === 0) return [];
-  const found = await MediaAsset.find({ _id: { $in: ids }, status: "active" })
+  const unique = [...new Set(ids)];
+  const found = await MediaAsset.find({ _id: { $in: unique }, status: "active" })
     .select("_id")
     .lean();
   const available = new Set(found.map((doc) => String(doc._id)));
-  return ids.filter((id) => !available.has(id));
+  return unique.filter((id) => !available.has(id));
 }
 
 // ---------------------------------------------------------------- writes
 
-export type CreateResult = { ok: false; reason: "slug-taken" | "image-unavailable" };
+export type CreateResult =
+  { ok: true; id: string } | { ok: false; reason: "slug-taken" | "image-unavailable" };
 
 export async function createEntry(input: {
   type: ContentType;
@@ -90,8 +96,10 @@ export async function createEntry(input: {
   actor: AuditActor;
 }): Promise<CreateResult> {
   await connectToDatabase();
-  const { slug, data, seo } = input.parsed;
+  const { data, seo } = input.parsed;
   const draft = data as unknown as Record<string, unknown>;
+  // FAQ entries have no address of their own: each gets a private, random one.
+  const slug = input.type === "faq" ? `faq-${randomBytes(4).toString("hex")}` : input.parsed.slug;
   if ((await unavailableAssets(input.parsed)).length > 0) return { ok: false, reason: "image-unavailable" };
   try {
     return await withSession<CreateResult>(async (session) => {
@@ -142,8 +150,9 @@ export async function saveDraft(input: {
   actor: AuditActor;
 }): Promise<SaveResult> {
   await connectToDatabase();
-  const { slug, data, seo } = input.parsed;
+  const { data, seo } = input.parsed;
   const draft = data as unknown as Record<string, unknown>;
+  if ((await unavailableAssets(input.parsed)).length > 0) return { ok: false, reason: "image-unavailable" };
   try {
     return await withSession<SaveResult>(async (session) => {
       const entry = await ContentEntry.findOne({ _id: input.id, type: input.type }).session(session).lean();
@@ -151,6 +160,8 @@ export async function saveDraft(input: {
       if (entry.status === "archived") return { ok: false, reason: "archived" };
       if (entry.draftVersion !== input.expectedVersion) return { ok: false, reason: "conflict" };
 
+      // An FAQ entry keeps its private address for life.
+      const slug = entry.type === "faq" ? entry.slug : input.parsed.slug;
       const next = entry.draftVersion + 1;
       const updated = await ContentEntry.updateOne(
         { _id: input.id, draftVersion: input.expectedVersion, status: { $ne: "archived" } },
@@ -217,6 +228,7 @@ export async function publishEntry(input: {
             publishedSlug: entry.slug,
             publishedVersion: entry.draftVersion,
             publishedAt: entry.publishedAt ?? now,
+            lastPublishedAt: now,
           },
         },
         { session },

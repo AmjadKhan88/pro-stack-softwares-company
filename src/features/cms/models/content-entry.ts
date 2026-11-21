@@ -26,6 +26,7 @@ export interface ContentEntryDoc {
   publishedAt?: Date;
   createdBy: string;
   createdByEmail: string;
+  lastPublishedAt?: Date;
 }
 
 const seoSchema = new Schema<SeoData>(
@@ -51,6 +52,7 @@ const contentEntrySchema = new Schema<ContentEntryDoc>(
     publishedSlug: { type: String },
     publishedVersion: { type: Number },
     publishedAt: { type: Date },
+    lastPublishedAt: { type: Date },
     createdBy: { type: String, required: true },
     createdByEmail: { type: String, required: true },
   },

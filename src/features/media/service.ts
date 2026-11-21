@@ -180,6 +180,8 @@ async function countUsage(id: string): Promise<number> {
       { "draftSeo.ogImageAssetId": id },
       { "published.imageAssetId": id },
       { "publishedSeo.ogImageAssetId": id },
+      { "draft.blocks.assetId": id },
+      { "published.blocks.assetId": id },
     ],
   });
 }

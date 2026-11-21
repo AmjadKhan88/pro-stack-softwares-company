@@ -1,3 +1,10 @@
+export interface PublicImage {
+  url: string;
+  width: number;
+  height: number;
+  alt: string;
+}
+
 /** Optional search-engine overrides set in the admin. */
 export interface PublicSeo {
   title?: string;
@@ -41,13 +48,40 @@ export interface ProcessStep {
 
 export interface FaqItem {
   question: string;
+  /** Rich text (the same small formatting language as the editor). */
   answer: string;
   isDemo: boolean;
+  position?: number;
 }
 
-export interface PublicImage {
-  url: string;
-  width: number;
-  height: number;
-  alt: string;
+/** A block as the website draws it: images are already looked up, addresses already checked. */
+export type PublicBlock =
+  | { type: "richtext"; text: string }
+  | { type: "image"; image: PublicImage; caption?: string }
+  | { type: "steps"; heading?: string; items: { title: string; description: string }[] }
+  | { type: "technologies"; heading?: string; items: string[] }
+  | { type: "cta"; heading: string; text?: string; buttonLabel: string; buttonHref: string };
+
+export interface Article {
+  slug: string;
+  title: string;
+  summary: string;
+  category: string;
+  author?: string;
+  image?: PublicImage;
+  blocks: PublicBlock[];
+  /** ISO dates, or null when unknown (a preview of a draft). */
+  publishedAt: string | null;
+  updatedAt: string | null;
+  readingMinutes: number;
+  seo?: PublicSeo;
+}
+
+export interface CmsPage {
+  slug: string;
+  title: string;
+  summary: string;
+  blocks: PublicBlock[];
+  updatedAt: string | null;
+  seo?: PublicSeo;
 }
