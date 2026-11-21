@@ -18,7 +18,8 @@
     "e2e:serve": "next build && next start -p 3100",
     "test:e2e": "npm run seed:e2e && playwright test",
     "demo:load": "tsx --conditions=react-server --env-file=.env scripts/demo-data.ts load",
-    "demo:remove": "tsx --conditions=react-server --env-file=.env scripts/demo-data.ts remove"
+    "demo:remove": "tsx --conditions=react-server --env-file=.env scripts/demo-data.ts remove",
+    "content:legal-drafts": "tsx --conditions=react-server --env-file=.env scripts/legal-drafts.ts"
   },
   "dependencies": {
     "@better-auth/mongo-adapter": "^1.7.12",

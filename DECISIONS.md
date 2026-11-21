@@ -98,6 +98,7 @@
 - Audited: create, publish, unpublish, archive, unarchive, revision restore. Every save is in the revision history with who and when.
 
 ## ADR-016 — Media: server-chosen names, server-verified uploads, public library
+
 - Uploads follow: authenticate + authorize (content.edit) + rate limit -> validate declared type/extension/size -> create a one-use, 20-minute ticket bound to the uploader with a SERVER-chosen random public id (psc/site/<24 hex>) -> signed (SHA-256) direct browser upload -> the server asks Cloudinary's Admin API what was actually stored and verifies type, format, size, dimensions, name and cloud -> only then records the asset. A failed check deletes the file from Cloudinary.
 - The browser never supplies a URL or public id as proof of anything; the database record is built from Cloudinary's own answer. The API secret never leaves the server.
 - Allowed: JPEG, PNG, WebP, <= 5 MB, 100-6000 px. SVG is excluded (scriptable).
@@ -105,3 +106,13 @@
 - Next.js image optimization is allowed only for this cloud's /image/upload path (images.remotePatterns). A report-only CSP already lists api.cloudinary.com and res.cloudinary.com; enforcement and nonces are Phase 8.
 - The library is public delivery. Confidential client files use private, signed delivery (Part 6D).
 - Share images are delivered as 1200x630 cropped transformations; a page's own image is used when no share image is set.
+
+## ADR-017 — Pages and articles are typed blocks; rich text is a tiny safe language
+- Articles and pages are lists of up to 40 blocks of five types (rich text, image, process steps, technology list, call to action), validated strictly on save and for completeness on publish. No raw HTML, scripts or embeds. Testimonials/team/logos/metrics are deferred until real content exists.
+- Rich text is parsed by our own small parser into plain data and drawn as React elements, so nothing can become markup. Links are limited to this site, https, mailto and tel; unsafe addresses keep the words and lose the link. Covered by parser, renderer and hostile-input tests.
+- FAQ entries are content entries with a private random address and an order number; real entries replace sample ones; FAQ structured data comes only from real entries.
+- Pages live at top-level addresses; addresses the site already uses are refused, except "about" and "process", where a published page replaces the built-in one.
+- Template text marks unfinished parts as [[placeholders]]; any article, page or FAQ containing one cannot be published. Privacy and Terms are generated as DRAFT templates from what the platform actually does, never published automatically, and need legal review.
+- The footer links to Privacy, Terms and Insights only when those pages exist. Insights has no sample content.
+- Redirect lookups use one cached map per content type, so guessed addresses can't fill the cache.
+- The editor's fields are rebuilt whenever the saved content changes, so restoring a version can never leave stale text behind.
