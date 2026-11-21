@@ -1,12 +1,31 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArticleBody } from "@/components/public-site/article-body";
+import { Blocks } from "@/components/public-site/blocks";
 import { CaseStudyBody } from "@/components/public-site/case-study-detail";
+import { RichText } from "@/components/public-site/rich-text";
 import { ServiceDetailBody } from "@/components/public-site/service-detail";
 import { getCaseStudies, getServiceBySlug } from "@/features/content/repository";
-import { toPublicCaseStudy, toPublicService } from "@/features/cms/mapping";
+import { blockAssetIds } from "@/features/cms/blocks";
+import {
+  toPublicArticle,
+  toPublicCaseStudy,
+  toPublicFaq,
+  toPublicPage,
+  toPublicService,
+  type PublishedAsset,
+  type PublishedItem,
+} from "@/features/cms/mapping";
 import { getEntry } from "@/features/cms/service";
 import { CONTENT_TYPE_INFO, type ContentType } from "@/features/cms/types";
+import { getMediaViewsByIds } from "@/features/media/service";
 import { requirePermission } from "@/server/auth/session";
+
+function IncompleteNotice() {
+  return (
+    <p className="text-muted-foreground text-sm">Add the basics (title and summary) to see a preview.</p>
+  );
+}
 
 /** Shows the saved DRAFT the way visitors would see it. Staff-only and never public. */
 export async function ContentPreviewView({
@@ -22,7 +41,78 @@ export async function ContentPreviewView({
   const entry = await getEntry(id);
   if (!entry || entry.type !== type) notFound();
 
-  const item = { slug: entry.slug, data: entry.data, seo: entry.seo };
+  // Look up the draft's images so the preview shows them (the public site does the same for what is live).
+  const seo = entry.seo as { ogImageAssetId?: unknown } | null;
+  const ids = [entry.data.imageAssetId, seo?.ogImageAssetId, ...blockAssetIds(entry.data.blocks)].filter(
+    (value): value is string => typeof value === "string",
+  );
+  const media = await getMediaViewsByIds(ids);
+  const assets: Record<string, PublishedAsset> = Object.fromEntries(
+    Object.values(media).map((m) => [
+      m.id,
+      { id: m.id, url: m.url, width: m.width, height: m.height, alt: m.alt },
+    ]),
+  );
+  const item: PublishedItem = { slug: entry.slug, data: entry.data, seo: entry.seo, assets };
+
+  let body: React.ReactNode;
+  if (type === "service") {
+    const service = toPublicService(item);
+    if (!service) body = <IncompleteNotice />;
+    else {
+      const related = (await getCaseStudies()).filter((c) => c.serviceSlug === service.slug);
+      body = (
+        <div className="space-y-6">
+          <ServiceDetailBody service={service} related={related} />
+        </div>
+      );
+    }
+  } else if (type === "case_study") {
+    const study = toPublicCaseStudy(item);
+    if (!study) body = <IncompleteNotice />;
+    else {
+      const service = study.serviceSlug ? await getServiceBySlug(study.serviceSlug) : null;
+      body = (
+        <div className="mx-auto max-w-3xl space-y-8">
+          <CaseStudyBody study={study} service={service} />
+        </div>
+      );
+    }
+  } else if (type === "article") {
+    const article = toPublicArticle(item);
+    body = article ? (
+      <div className="mx-auto max-w-3xl space-y-8">
+        <ArticleBody article={article} />
+      </div>
+    ) : (
+      <IncompleteNotice />
+    );
+  } else if (type === "page") {
+    const page = toPublicPage(item);
+    body = page ? (
+      <div className="mx-auto max-w-3xl space-y-8">
+        <header className="space-y-2">
+          <h1 className="text-4xl font-semibold tracking-tight">{page.title}</h1>
+          {page.summary ? (
+            <p className="text-muted-foreground text-base leading-relaxed">{page.summary}</p>
+          ) : null}
+        </header>
+        <Blocks blocks={page.blocks} />
+      </div>
+    ) : (
+      <IncompleteNotice />
+    );
+  } else {
+    const faq = toPublicFaq(item);
+    body = faq ? (
+      <div className="border-border mx-auto max-w-3xl rounded-xl border p-5">
+        <p className="font-medium">{faq.question}</p>
+        <RichText source={faq.answer} className="text-muted-foreground mt-3" />
+      </div>
+    ) : (
+      <IncompleteNotice />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -35,34 +125,7 @@ export async function ContentPreviewView({
           ← Back to editing
         </Link>
       </div>
-
-      {type === "service" ? <ServicePreview item={item} /> : <CaseStudyPreview item={item} />}
+      {body}
     </div>
   );
-}
-
-async function ServicePreview({ item }: { item: { slug: string; data: unknown; seo: unknown } }) {
-  const service = toPublicService(item);
-  if (!service) return <IncompleteNotice />;
-  const related = (await getCaseStudies()).filter((c) => c.serviceSlug === service.slug);
-  return (
-    <div className="space-y-6">
-      <ServiceDetailBody service={service} related={related} />
-    </div>
-  );
-}
-
-async function CaseStudyPreview({ item }: { item: { slug: string; data: unknown; seo: unknown } }) {
-  const study = toPublicCaseStudy(item);
-  if (!study) return <IncompleteNotice />;
-  const service = study.serviceSlug ? await getServiceBySlug(study.serviceSlug) : null;
-  return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <CaseStudyBody study={study} service={service} />
-    </div>
-  );
-}
-
-function IncompleteNotice() {
-  return <p className="text-muted-foreground text-sm">Add a title and a summary to see a preview.</p>;
 }
