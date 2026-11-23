@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ReviewResponseForm } from "@/components/portal/review-response-form";
+import { FileList } from "@/components/files/file-list";
 import { ReviewHistory } from "@/components/projects/review-history";
 import { StatusPill } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { listClientFiles } from "@/features/files/service";
 import { requireClientContext } from "@/features/organizations/context";
 import { CLIENT_REVIEW_LABELS, REVIEW_TONE } from "@/features/projects/review";
 import { listClientProjectReviewEvents } from "@/features/projects/review-service";
@@ -31,7 +33,11 @@ export default async function PortalProjectPage({ params }: { params: Promise<{ 
   const detail = await getClientProject(organization.id, id);
   if (!detail) notFound();
   const { project, milestones, deliverables, progress } = detail;
-  const reviewEvents = await listClientProjectReviewEvents(organization.id, project.id);
+  const [reviewEvents, allFiles] = await Promise.all([
+    listClientProjectReviewEvents(organization.id, project.id),
+    listClientFiles(organization.id),
+  ]);
+  const files = allFiles.filter((file) => file.projectId === project.id);
   const open = isProjectOpen(project.status);
 
   return (
@@ -156,6 +162,20 @@ export default async function PortalProjectPage({ params }: { params: Promise<{ 
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Files</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FileList
+            files={files}
+            audience="client"
+            canManage={false}
+            emptyText="No files have been shared for this project yet."
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

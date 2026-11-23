@@ -47,7 +47,7 @@ export const portalNav: NavGroup[] = [
       { label: "Projects", href: "/portal/projects", icon: "projects", ready: true },
       { label: "Proposals", href: "/portal/proposals", icon: "proposals", ready: true },
       { label: "Requests", href: "/portal/requests", icon: "inbox", ready: true },
-      { label: "Files", href: "/portal/files", icon: "files", ready: false, phase: 6 },
+      { label: "Files", href: "/portal/files", icon: "files", ready: true },
     ],
   },
   {
@@ -129,7 +129,7 @@ export const adminNav: NavGroup[] = [
       { label: "Pages", href: "/admin/content/pages", icon: "content", ready: true, anyOf: ["content.edit"] },
       { label: "FAQs", href: "/admin/content/faqs", icon: "content", ready: true, anyOf: ["content.edit"] },
       { label: "Media", href: "/admin/media", icon: "media", ready: true, anyOf: ["content.edit"] },
-      { label: "SEO", href: "/admin/seo", icon: "seo", ready: false, phase: 6, anyOf: ["content.edit"] },
+      { label: "SEO", href: "/admin/seo", icon: "seo", ready: true, anyOf: ["content.edit"] },
     ],
   },
   {

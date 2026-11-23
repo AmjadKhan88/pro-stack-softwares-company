@@ -41,4 +41,8 @@ export const AUDIT_LABELS: Record<AuditAction, string> = {
   "media.updated": "Image description changed",
   "media.archived": "Image archived",
   "media.restored": "Image restored",
+  "file.uploaded": "Project file uploaded",
+  "file.visibility_changed": "Project file visibility changed",
+  "file.archived": "Project file archived",
+  "file.restored": "Project file restored",
 };
