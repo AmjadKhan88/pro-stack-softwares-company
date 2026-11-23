@@ -247,6 +247,81 @@ async function main() {
       ...stamps,
     });
 
+    // Private files for the download-access tests. The files themselves aren't in Cloudinary: these tests
+    // check WHO is allowed to ask for a file, which happens before any request to Cloudinary.
+    await db.collection("deliverables").insertOne({
+      _id: oid(E2E_IDS.deliverableFilesHidden),
+      projectId: E2E_IDS.projectA,
+      title: "Hidden deliverable for files",
+      status: "planned",
+      position: 9,
+      clientVisible: false,
+      reviewStatus: "not_submitted",
+      reviewRound: 0,
+      createdBy: "e2e-seed",
+      ...stamps,
+    });
+    const fileBase = {
+      format: "pdf",
+      bytes: 1000,
+      uploadedBy: "e2e-seed",
+      uploadedByEmail: "seed@e2e.test",
+      ...stamps,
+    };
+    await db.collection("projectfiles").insertMany([
+      {
+        ...fileBase,
+        _id: oid(E2E_IDS.fileVisible),
+        projectId: E2E_IDS.projectA,
+        organizationId: E2E_IDS.orgA,
+        publicId: "psc/files/e2e-visible",
+        originalFilename: "e2e-visible.pdf",
+        status: "active",
+        clientVisible: true,
+      },
+      {
+        ...fileBase,
+        _id: oid(E2E_IDS.fileHidden),
+        projectId: E2E_IDS.projectA,
+        organizationId: E2E_IDS.orgA,
+        publicId: "psc/files/e2e-hidden",
+        originalFilename: "e2e-hidden.pdf",
+        status: "active",
+        clientVisible: false,
+      },
+      {
+        ...fileBase,
+        _id: oid(E2E_IDS.fileOnHiddenDeliverable),
+        projectId: E2E_IDS.projectA,
+        organizationId: E2E_IDS.orgA,
+        deliverableId: E2E_IDS.deliverableFilesHidden,
+        publicId: "psc/files/e2e-on-hidden-deliverable",
+        originalFilename: "e2e-on-hidden-deliverable.pdf",
+        status: "active",
+        clientVisible: true,
+      },
+      {
+        ...fileBase,
+        _id: oid(E2E_IDS.fileArchived),
+        projectId: E2E_IDS.projectA,
+        organizationId: E2E_IDS.orgA,
+        publicId: "psc/files/e2e-archived",
+        originalFilename: "e2e-archived.pdf",
+        status: "archived",
+        clientVisible: true,
+      },
+      {
+        ...fileBase,
+        _id: oid(E2E_IDS.fileOtherOrg),
+        projectId: E2E_IDS.projectB,
+        organizationId: E2E_IDS.orgB,
+        publicId: "psc/files/e2e-other-org",
+        originalFilename: "e2e-other-org.pdf",
+        status: "active",
+        clientVisible: true,
+      },
+    ]);
+
     console.log(
       `Seeded ${db.databaseName}: ${Object.keys(E2E_ACCOUNTS).join(", ")}, two organizations, proposals and projects.`,
     );

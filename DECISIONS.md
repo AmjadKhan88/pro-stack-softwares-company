@@ -108,6 +108,7 @@
 - Share images are delivered as 1200x630 cropped transformations; a page's own image is used when no share image is set.
 
 ## ADR-017 — Pages and articles are typed blocks; rich text is a tiny safe language
+
 - Articles and pages are lists of up to 40 blocks of five types (rich text, image, process steps, technology list, call to action), validated strictly on save and for completeness on publish. No raw HTML, scripts or embeds. Testimonials/team/logos/metrics are deferred until real content exists.
 - Rich text is parsed by our own small parser into plain data and drawn as React elements, so nothing can become markup. Links are limited to this site, https, mailto and tel; unsafe addresses keep the words and lose the link. Covered by parser, renderer and hostile-input tests.
 - FAQ entries are content entries with a private random address and an order number; real entries replace sample ones; FAQ structured data comes only from real entries.
@@ -116,3 +117,11 @@
 - The footer links to Privacy, Terms and Insights only when those pages exist. Insights has no sample content.
 - Redirect lookups use one cached map per content type, so guessed addresses can't fill the cache.
 - The editor's fields are rebuilt whenever the saved content changes, so restoring a version can never leave stale text behind.
+
+## ADR-018 — Project files are private, authorized on every download, and proxied
+- Files are uploaded straight to Cloudinary as type "authenticated" (no public address), under server-chosen random names (psc/files/<24 hex>), using one-use 20-minute tickets bound to the uploader, with the same server-side verification as the media library plus a check that the stored file really is private. Failures are deleted.
+- Allowed: PDF, PNG, JPEG, WebP, <= 10 MB. Office files and archives are excluded (macros, executables, unverifiable behaviour).
+- Staff with projects.manage upload and manage; files are hidden from clients by default and shown explicitly (audited). Hiding a deliverable hides its files.
+- Every download goes through /api/files/<id>, which decides on EVERY request: clients need their own organization (from the account), an active, visible file, and a visible deliverable if attached; staff need project read access (developers: assigned). A refused file is indistinguishable from a missing one (404); signed-out is 401.
+- Only after that does the server request a signed Cloudinary link valid for 60 seconds, fetch the file itself and stream it with the original name and Content-Disposition: attachment. No Cloudinary address ever reaches a browser, so a copied link can't be shared. Downloads are rate-limited and logged.
+- The SEO overview is a pure, tested checklist over the published snapshots (descriptions, titles, sharing images, noindex, duplicates), linking to the editors.

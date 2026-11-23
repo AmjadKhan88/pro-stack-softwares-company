@@ -17,6 +17,7 @@ export const E2E_ACCOUNTS = {
 export const E2E_INVITEE = { email: "invitee@e2e.test", role: "client" } as const;
 export const E2E_INVITE_TOKEN = "e2e-invitation-token-0123456789-abcdefghijklmnop";
 
+const fid = (suffix: string) => `e2e${suffix.padStart(21, "0")}`;
 // Fixed 24-character ids so tests can open records by URL.
 export const E2E_IDS = {
   orgA: "e2e000000000000000000008",
@@ -31,4 +32,10 @@ export const E2E_IDS = {
   fakeProposalA: "e2e00000000000000000000a",
   fakeProposalB: "e2e00000000000000000000b",
   mediaAsset: "e2e00000000000000000000c",
+  deliverableFilesHidden: fid("d"),
+  fileVisible: fid("f01"),
+  fileHidden: fid("f02"),
+  fileOnHiddenDeliverable: fid("f03"),
+  fileArchived: fid("f04"),
+  fileOtherOrg: fid("f05"),
 } as const;
