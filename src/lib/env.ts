@@ -21,6 +21,8 @@ const serverSchema = z.object({
     .regex(/^\d{6,32}$/)
     .optional(),
   CLOUDINARY_API_SECRET: z.string().min(10).max(128).optional(),
+  JOBS_SECRET: z.string().min(24).max(200).optional(),
+  NOTIFICATION_EMAILS: z.enum(["on", "off"]).optional(),
 });
 
 const publicSchema = z.object({

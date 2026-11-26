@@ -1,5 +1,6 @@
 import type { NavGroup } from "@/config/navigation";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ThemeSwitcher } from "@/components/shared/theme-switcher";
 import type { SessionUser } from "@/server/auth/session";
 import { Brand } from "./brand";
@@ -54,6 +55,7 @@ export function AppShell({ variant, groups, sublabel, areaLabel, homeHref, user,
           />
           <span className="text-sm font-medium">{areaLabel}</span>
           <div className="ml-auto flex items-center gap-3">
+            <NotificationBell href={dark ? "/admin/notifications" : "/portal/notifications"} />
             <ThemeSwitcher />
           </div>
         </header>

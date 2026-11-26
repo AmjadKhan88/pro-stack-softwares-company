@@ -119,9 +119,18 @@
 - The editor's fields are rebuilt whenever the saved content changes, so restoring a version can never leave stale text behind.
 
 ## ADR-018 — Project files are private, authorized on every download, and proxied
+
 - Files are uploaded straight to Cloudinary as type "authenticated" (no public address), under server-chosen random names (psc/files/<24 hex>), using one-use 20-minute tickets bound to the uploader, with the same server-side verification as the media library plus a check that the stored file really is private. Failures are deleted.
 - Allowed: PDF, PNG, JPEG, WebP, <= 10 MB. Office files and archives are excluded (macros, executables, unverifiable behaviour).
 - Staff with projects.manage upload and manage; files are hidden from clients by default and shown explicitly (audited). Hiding a deliverable hides its files.
 - Every download goes through /api/files/<id>, which decides on EVERY request: clients need their own organization (from the account), an active, visible file, and a visible deliverable if attached; staff need project read access (developers: assigned). A refused file is indistinguishable from a missing one (404); signed-out is 401.
 - Only after that does the server request a signed Cloudinary link valid for 60 seconds, fetch the file itself and stream it with the original name and Content-Disposition: attachment. No Cloudinary address ever reaches a browser, so a copied link can't be shared. Downloads are rate-limited and logged.
 - The SEO overview is a pure, tested checklist over the published snapshots (descriptions, titles, sharing images, noindex, duplicates), linking to the editors.
+
+## ADR-019 — Notifications are created in the audit transaction; emails use an outbox
+- recordAudit() creates the notifications for an audited event inside the SAME database transaction, so a committed change can never lose its notification (and a rolled-back one never leaves one). Rules for who is told live in notifications/events.ts; problems working out recipients are logged and never break the change.
+- The person who caused an event is never notified of it. Only active accounts are notified. Recipients are resolved on the server from data (organization members, project team, roles), never from the request.
+- Notification titles are generic; emails contain only the title and a link, never names or file details. Email is opt-out for clients and opt-in (leads, proposal answers) for staff, per category, and re-checked at send time.
+- Email is an outbox: notifications are saved with emailStatus "pending", claimed atomically, sent after the request finishes (next/server after) and retried up to 3 times; a bearer-secret protected job route is the safety net. NOTIFICATION_EMAILS=off disables sending (tests).
+- Every query for notifications starts from the signed-in person's id. The "open" route marks read and redirects only to a path on this website; someone else's notification id behaves as if it didn't exist.
+- The unread count is polled every minute and on tab focus; the live service in Part 7C will make it instant, with this polling kept as the fallback.

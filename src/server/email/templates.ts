@@ -106,3 +106,15 @@ export function proposalSentEmail({
     text: `${intro}\n\n${url}\n\n${footnote}`,
   };
 }
+
+/** The email for ANY notification. It only says that something new is waiting: no names, titles of work or files. */
+export function notificationEmail({ title, url }: { title: string; url: string }): EmailContent {
+  const intro = "You have a new update. Sign in to read the details.";
+  const footnote =
+    "You're receiving this because of your notification settings. You can change them any time on your Notifications page.";
+  return {
+    subject: `${title} · ${siteConfig.name}`,
+    html: layout({ heading: title, intro, actionLabel: "Open", url, footnote }),
+    text: `${title}\n\n${intro}\n\n${url}\n\n${footnote}`,
+  };
+}

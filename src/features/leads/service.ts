@@ -1,4 +1,5 @@
 import "server-only";
+import { notifyNewWebsiteLead } from "@/features/notifications/events";
 import { connectToDatabase } from "@/server/db/mongoose";
 import { Lead } from "./models/lead";
 import { generateReferenceCode } from "./reference-code";
@@ -13,7 +14,15 @@ export async function createLead(input: InquiryInput, ipHash: string): Promise<{
   for (let attempt = 0; attempt < 5; attempt++) {
     const referenceCode = generateReferenceCode();
     try {
-      await Lead.create({ ...input, referenceCode, ipHash, source: "contact-form", status: "new" });
+      const created = await Lead.create({
+        ...input,
+        referenceCode,
+        ipHash,
+        source: "contact-form",
+        status: "new",
+      });
+      // Tell the team. This never blocks or breaks the visitor's submission.
+      await notifyNewWebsiteLead({ id: String(created._id), label: input.company || input.name });
       return { referenceCode };
     } catch (error) {
       if (isDuplicateKey(error) && attempt < 4) continue; // code collision: try another

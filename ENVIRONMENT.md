@@ -23,6 +23,7 @@
 | IP_HASH_SALT                                                     |         | no    | 32+                                     | random characters for hashing |
 | NEXT_PUBLIC_ALLOW_INDEXING                                       | yes     | false | until launch                            |
 | CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET | no      |
+| NOTIFICATION_EMAILS                                              | no      |
 
 Rules: `lib/env.ts` validates with Zod at startup; missing integration keys produce a clear setup message. `.env*` is git-ignored; ship `.env.example` with empty values.
 

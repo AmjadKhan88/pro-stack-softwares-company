@@ -1,5 +1,6 @@
 import "server-only";
 import type { ClientSession } from "mongoose";
+import { notifyForAudit } from "@/features/notifications/events";
 import { connectToDatabase } from "@/server/db/mongoose";
 import { AuditLog } from "./models/audit-log";
 import { redactMetadata } from "./redact";
@@ -12,10 +13,13 @@ interface AuditEntry {
   metadata?: Record<string, unknown>;
 }
 
-/** Records a privileged action. Pass the transaction session so the record commits (or rolls back) with the change. */
+/**
+ * Records a privileged action. Pass the transaction session so the record commits (or rolls back) with the change.
+ * Anyone who should hear about it gets a notification in the SAME transaction, so the two can never disagree.
+ */
 export async function recordAudit(entry: AuditEntry, session?: ClientSession): Promise<void> {
   await connectToDatabase();
-  await AuditLog.create(
+  const [created] = await AuditLog.create(
     [
       {
         action: entry.action,
@@ -28,6 +32,7 @@ export async function recordAudit(entry: AuditEntry, session?: ClientSession): P
     ],
     { session },
   );
+  await notifyForAudit(entry, created ? String(created._id) : undefined, session);
 }
 
 export interface AuditRow {
