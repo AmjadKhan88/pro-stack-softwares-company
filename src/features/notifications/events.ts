@@ -273,3 +273,47 @@ export async function notifyNewWebsiteLead(lead: { id: string; label: string }):
     logger.error({ err: error }, "could not notify staff of a new website lead");
   }
 }
+
+/**
+ * Tells the other side about a new message, INSIDE the message's own transaction. A person with an unread
+ * notification for this conversation isn't sent another until they have read it, so nobody is flooded.
+ * The notification (and any email) never contains the message itself.
+ */
+export async function notifyMessage(input: {
+  projectId: string;
+  side: "client" | "staff";
+  actorId: string;
+  session: ClientSession;
+}): Promise<void> {
+  const project = await Project.findById(input.projectId).session(input.session).lean();
+  if (!project) return;
+  const toClient = input.side === "staff";
+  const recipients = toClient
+    ? await orgMemberIds(project.organizationId, input.session)
+    : await projectTeamIds(project, input.session);
+  const kind: NotificationKind = toClient ? "message_from_team" : "message_from_client";
+
+  const waiting = await Notification.find({
+    kind,
+    entityId: input.projectId,
+    readAt: { $exists: false },
+    recipientId: { $in: recipients },
+  })
+    .session(input.session)
+    .select("recipientId")
+    .lean();
+  const alreadyTold = new Set(waiting.map((doc) => doc.recipientId));
+
+  await deliver(
+    {
+      kind,
+      recipients: recipients.filter((id) => !alreadyTold.has(id)),
+      facts: { projectId: input.projectId, label: project.title },
+      entityType: "project",
+      entityId: input.projectId,
+    },
+    input.actorId,
+    undefined,
+    input.session,
+  );
+}

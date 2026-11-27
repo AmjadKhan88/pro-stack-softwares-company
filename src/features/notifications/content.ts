@@ -79,5 +79,17 @@ export function buildContent(
       return make("New project request", label, id ? `/admin/leads/${id}` : "/admin/leads");
     case "new_lead":
       return make("New enquiry from the website", label, id ? `/admin/leads/${id}` : "/admin/leads");
+    case "message_from_team":
+      return make(
+        "New message from your team",
+        label,
+        projectId ? `/portal/projects/${projectId}/messages` : "/portal/projects",
+      );
+    case "message_from_client":
+      return make(
+        "New message from a client",
+        label,
+        projectId ? `/admin/projects/${projectId}/messages` : "/admin/projects",
+      );
   }
 }

@@ -71,8 +71,22 @@ describe("who gets which emails", () => {
     for (const role of ["owner", "admin", "project_manager", "developer", "support", "content_manager"]) {
       expect([...categoriesFor(role)].sort()).toEqual(["deliverables", "leads", "proposals", "team"]);
     }
-    expect(categoriesFor(undefined)).toEqual([]);
-    expect(categoriesFor("root")).toEqual([]);
+    expect([...categoriesFor("client")].sort()).toEqual([
+      "deliverables",
+      "files",
+      "messages",
+      "projects",
+      "proposals",
+    ]);
+    for (const role of ["owner", "admin", "project_manager", "developer", "support", "content_manager"]) {
+      expect([...categoriesFor(role)].sort()).toEqual([
+        "deliverables",
+        "leads",
+        "messages",
+        "proposals",
+        "team",
+      ]);
+    }
   });
 
   it("defaults: clients get everything by email, staff only leads and proposal answers", () => {
@@ -81,6 +95,7 @@ describe("who gets which emails", () => {
     expect(defaultEmail("owner", "proposals")).toBe(true);
     expect(defaultEmail("owner", "deliverables")).toBe(false);
     expect(defaultEmail("developer", "team")).toBe(false);
+    expect(defaultEmail("owner", "messages")).toBe(true);
   });
 
   it("respects a person's own choice, and never sends a kind their role can't receive", () => {

@@ -1,6 +1,14 @@
 import { isRole } from "@/server/policies/permissions";
 
-export const CATEGORIES = ["proposals", "projects", "deliverables", "files", "leads", "team"] as const;
+export const CATEGORIES = [
+  "proposals",
+  "projects",
+  "deliverables",
+  "files",
+  "messages",
+  "leads",
+  "team",
+] as const;
 export type Category = (typeof CATEGORIES)[number];
 
 export const NOTIFICATION_KINDS = [
@@ -16,6 +24,8 @@ export const NOTIFICATION_KINDS = [
   "added_to_project",
   "new_request",
   "new_lead",
+  "message_from_team",
+  "message_from_client",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -32,10 +42,12 @@ export const KIND_CATEGORY: Record<NotificationKind, Category> = {
   added_to_project: "team",
   new_request: "leads",
   new_lead: "leads",
+  message_from_team: "messages",
+  message_from_client: "messages",
 };
 
-const CLIENT_CATEGORIES: readonly Category[] = ["proposals", "projects", "deliverables", "files"];
-const STAFF_CATEGORIES: readonly Category[] = ["leads", "proposals", "deliverables", "team"];
+const CLIENT_CATEGORIES: readonly Category[] = ["proposals", "projects", "deliverables", "files", "messages"];
+const STAFF_CATEGORIES: readonly Category[] = ["leads", "proposals", "deliverables", "messages", "team"];
 
 /** The kinds of notification a person can receive, by role. */
 export function categoriesFor(role: unknown): readonly Category[] {
@@ -52,11 +64,13 @@ const CATEGORY_TEXT: Record<
     projects: { label: "Projects", description: "When a project starts or its status changes." },
     deliverables: { label: "Deliverables", description: "When something is ready for your review." },
     files: { label: "Files", description: "When we share a file with you." },
+    messages: { label: "Messages", description: "When the team writes to you." },
   },
   staff: {
     leads: { label: "Leads", description: "New enquiries and project requests." },
     proposals: { label: "Proposals", description: "When a client accepts or declines a proposal." },
     deliverables: { label: "Deliverables", description: "When a client approves or asks for changes." },
+    messages: { label: "Messages", description: "When a client writes on one of your projects." },
     team: { label: "Team", description: "When you are added to a project." },
   },
 };
@@ -69,10 +83,10 @@ export function categoryText(role: unknown, category: Category): { label: string
 
 export type EmailPreferences = Partial<Record<Category, boolean>>;
 
-/** Clients get email for everything. Staff only for new leads and proposal answers, unless they choose otherwise. */
+/** Clients get email for everything. Staff for new leads, proposal answers and client messages, unless they choose otherwise. */
 export function defaultEmail(role: unknown, category: Category): boolean {
   if (role === "client") return true;
-  return category === "leads" || category === "proposals";
+  return category === "leads" || category === "proposals" || category === "messages";
 }
 
 export function wantsEmail(role: unknown, category: Category, stored?: EmailPreferences | null): boolean {

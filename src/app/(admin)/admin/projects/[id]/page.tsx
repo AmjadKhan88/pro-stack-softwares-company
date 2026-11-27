@@ -61,7 +61,19 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow={`Project ${project.code}`} title={project.title} description={project.summary} />
+      <PageHeader
+        eyebrow={`Project ${project.code}`}
+        title={project.title}
+        description={project.summary}
+        actions={
+          <Link
+            href={`/admin/projects/${project.id}/messages`}
+            className="text-accent text-sm font-medium hover:underline"
+          >
+            Messages
+          </Link>
+        }
+      />
 
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
         <div className="space-y-6">

@@ -128,9 +128,17 @@
 - The SEO overview is a pure, tested checklist over the published snapshots (descriptions, titles, sharing images, noindex, duplicates), linking to the editors.
 
 ## ADR-019 — Notifications are created in the audit transaction; emails use an outbox
+
 - recordAudit() creates the notifications for an audited event inside the SAME database transaction, so a committed change can never lose its notification (and a rolled-back one never leaves one). Rules for who is told live in notifications/events.ts; problems working out recipients are logged and never break the change.
 - The person who caused an event is never notified of it. Only active accounts are notified. Recipients are resolved on the server from data (organization members, project team, roles), never from the request.
 - Notification titles are generic; emails contain only the title and a link, never names or file details. Email is opt-out for clients and opt-in (leads, proposal answers) for staff, per category, and re-checked at send time.
 - Email is an outbox: notifications are saved with emailStatus "pending", claimed atomically, sent after the request finishes (next/server after) and retried up to 3 times; a bearer-secret protected job route is the safety net. NOTIFICATION_EMAILS=off disables sending (tests).
 - Every query for notifications starts from the signed-in person's id. The "open" route marks read and redirects only to a path on this website; someone else's notification id behaves as if it didn't exist.
 - The unread count is polled every minute and on tab focus; the live service in Part 7C will make it instant, with this polling kept as the fallback.
+
+## ADR-020 — One conversation per project, authorized from the account, notified in the same transaction
+- Each project has one conversation shared by the client's organization and the team. Messages are immutable plain text (cleaned, 1-4000 characters), always drawn as text.
+- authorizeConversation() decides on every page and send: a client needs their own organization's non-cancelled project (organization from the account); staff need project read access (developers: assigned). Anything else is indistinguishable from "not found". The sender's identity and side always come from the session, never the form.
+- Saving a message and notifying the other side happen in one transaction. A person with an unread notification for a conversation isn't notified again until they read it, so emails can't flood. Notifications and emails never contain the message text.
+- Rate limit: 30 messages per person per 10 minutes.
+- Open conversations re-check every 20 seconds as the fallback; Part 7C will push updates instantly.

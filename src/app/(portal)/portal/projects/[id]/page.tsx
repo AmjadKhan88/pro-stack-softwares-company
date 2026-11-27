@@ -55,6 +55,14 @@ export default async function PortalProjectPage({ params }: { params: Promise<{ 
           </StatusPill>
         </div>
         <p className="text-muted-foreground max-w-2xl leading-relaxed">{project.summary}</p>
+        <p>
+          <Link
+            href={`/portal/projects/${project.id}/messages`}
+            className="text-accent text-sm font-medium hover:underline"
+          >
+            Message the team →
+          </Link>
+        </p>
       </header>
 
       {progress.total > 0 ? (

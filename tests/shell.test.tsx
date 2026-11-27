@@ -47,6 +47,7 @@ describe("navigation shells", () => {
       "/admin/content/services",
       "/admin/leads",
       "/admin/media",
+      "/admin/messages",
       "/admin/notifications",
       "/admin/projects",
       "/admin/proposals",
