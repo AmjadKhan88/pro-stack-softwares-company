@@ -1,6 +1,8 @@
 import "server-only";
 import mongoose from "mongoose";
 import { notifyMessage } from "@/features/notifications/events";
+import { projectRoom } from "@/lib/realtime/contract";
+import { scheduleRealtimeEmit } from "@/server/realtime/emit";
 import { organizationNamesById } from "@/features/organizations/names";
 import { Project } from "@/features/projects/models/project";
 import { isObjectId } from "@/lib/object-id";
@@ -40,6 +42,14 @@ export async function postMessage(input: {
         session,
       });
     });
+    // Only after the transaction has committed: tell anyone with this conversation open to look again.
+    scheduleRealtimeEmit([
+      {
+        room: projectRoom(input.project.id),
+        event: "message.created",
+        data: { projectId: input.project.id },
+      },
+    ]);
   } finally {
     await session.endSession();
   }

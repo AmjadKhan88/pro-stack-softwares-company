@@ -16,6 +16,8 @@ import { logger } from "@/server/logger";
 import { ROLES, can, type Permission } from "@/server/policies/permissions";
 import { buildContent, type ContentFacts } from "./content";
 import { scheduleEmailDispatch } from "./email";
+import { userRoom } from "@/lib/realtime/contract";
+import { scheduleRealtimeEmit } from "@/server/realtime/emit";
 import { Notification } from "./models/notification";
 import { NotificationPreference } from "./models/notification-preference";
 import { KIND_CATEGORY, wantsEmail, type EmailPreferences, type NotificationKind } from "./types";
@@ -230,8 +232,16 @@ async function deliver(
       emailAttempts: 0,
     };
   });
-  await Notification.create(docs, { session: session ?? undefined, ordered: true });
+  const created = await Notification.create(docs, { session: session ?? undefined, ordered: true });
   if (docs.some((doc) => doc.emailStatus === "pending")) scheduleEmailDispatch();
+  // A tiny "something new" hint for open pages. The database stays the truth; pages re-read it.
+  scheduleRealtimeEmit(
+    created.map((doc) => ({
+      room: userRoom(doc.recipientId),
+      event: "notification.created" as const,
+      data: { id: String(doc._id), kind: doc.kind },
+    })),
+  );
 }
 
 /**

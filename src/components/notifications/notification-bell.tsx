@@ -1,36 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Bell } from "lucide-react";
+import { useRealtimeEvent } from "@/components/realtime/realtime-provider";
 
-/** A bell with the number of unread notifications. It re-checks every minute and when you return to the tab. */
+/** A bell with the number of unread notifications. Updates instantly when live updates are on; otherwise every minute. */
 export function NotificationBell({ href }: { href: string }) {
   const [unread, setUnread] = useState(0);
 
-  useEffect(() => {
-    let alive = true;
-    async function refresh() {
-      try {
-        const response = await fetch("/api/notifications/summary", { cache: "no-store" });
-        if (!response.ok) return;
-        const data = (await response.json()) as { unread?: number };
-        if (alive && typeof data.unread === "number") setUnread(data.unread);
-      } catch {
-        /* offline: keep the last number */
-      }
+  const refresh = useCallback(async () => {
+    try {
+      const response = await fetch("/api/notifications/summary", { cache: "no-store" });
+      if (!response.ok) return;
+      const data = (await response.json()) as { unread?: number };
+      if (typeof data.unread === "number") setUnread(data.unread);
+    } catch {
+      /* offline: keep the last number */
     }
+  }, []);
+
+  useEffect(() => {
     void refresh();
+    // The always-on fallback, in case live updates are off or paused.
     const timer = setInterval(() => {
       if (document.visibilityState === "visible") void refresh();
     }, 60_000);
-    window.addEventListener("focus", refresh);
+    const onFocus = () => void refresh();
+    window.addEventListener("focus", onFocus);
     return () => {
-      alive = false;
       clearInterval(timer);
-      window.removeEventListener("focus", refresh);
+      window.removeEventListener("focus", onFocus);
     };
-  }, []);
+  }, [refresh]);
+
+  // The live hint says "something new"; the number itself is always re-read from the website.
+  useRealtimeEvent("notification.created", () => void refresh());
+  useRealtimeEvent("resync", () => void refresh());
 
   return (
     <Link

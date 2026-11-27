@@ -137,8 +137,16 @@
 - The unread count is polled every minute and on tab focus; the live service in Part 7C will make it instant, with this polling kept as the fallback.
 
 ## ADR-020 — One conversation per project, authorized from the account, notified in the same transaction
+
 - Each project has one conversation shared by the client's organization and the team. Messages are immutable plain text (cleaned, 1-4000 characters), always drawn as text.
 - authorizeConversation() decides on every page and send: a client needs their own organization's non-cancelled project (organization from the account); staff need project read access (developers: assigned). Anything else is indistinguishable from "not found". The sender's identity and side always come from the session, never the form.
 - Saving a message and notifying the other side happen in one transaction. A person with an unread notification for a conversation isn't notified again until they read it, so emails can't flood. Notifications and emails never contain the message text.
 - Rate limit: 30 messages per person per 10 minutes.
 - Open conversations re-check every 20 seconds as the fallback; Part 7C will push updates instantly.
+
+## ADR-021 — A separate Socket.IO service on Render with signed tickets and id-only hints
+- Vercel (serverless) can't hold WebSocket connections, so live updates run as a separate always-on Node service (apps/realtime) on Render (Starter plan, Singapore region for Pakistan). The website can be hosted anywhere; both deploy independently.
+- The service has no database. The website issues a 15-minute HMAC-signed ticket after authenticating the session, listing the person's id and the projects they may follow, decided from the database with the same rules as the pages. The service verifies the ticket on every connection, puts each person in their own room only, lets them join project rooms only if listed (max 20), rate limits joins, caps sockets per user, accepts only browsers from WEB_ORIGINS, and closes the connection when the ticket expires (the page reconnects with a new one).
+- The website sends hints to POST /emit with a separate bearer secret, after the data is committed (next/server after). The service accepts only two events, to the right kind of room, carrying only ids. Message text and notification content never pass through it.
+- The database stays the truth: pages re-read after a hint, after reconnection ("resync") and on timers. Polling (bell 60s, conversations 20s, slowed to 80s while live) remains the fallback, so everything works with live updates off.
+- The contract and ticket code are one file pair kept identical in both places by a test. A revoked project can still send hints for up to 15 minutes (ticket lifetime); it can never expose content.

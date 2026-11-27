@@ -33,7 +33,7 @@ export default async function AdminProjectMessagesPage({ params }: { params: Pro
         title="Messages"
         description={`The client sees everything written here. Project: ${access.project.title}.`}
       />
-      <AutoRefresh />
+      <AutoRefresh projectId={access.project.id} />
       <Card>
         <CardContent className="py-5">
           <MessageThread messages={messages} hasMore={hasMore} />

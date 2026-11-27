@@ -32,7 +32,7 @@ export default async function PortalMessagesPage({ params }: { params: Promise<{
         <h1 className="text-3xl font-semibold tracking-tight">Messages</h1>
         <p className="text-muted-foreground">Talk to the team about {access.project.title}.</p>
       </header>
-      <AutoRefresh />
+      <AutoRefresh projectId={access.project.id} />
       <Card>
         <CardContent className="py-5">
           <MessageThread messages={messages} hasMore={hasMore} />
