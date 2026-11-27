@@ -23,6 +23,9 @@ const serverSchema = z.object({
   CLOUDINARY_API_SECRET: z.string().min(10).max(128).optional(),
   JOBS_SECRET: z.string().min(24).max(200).optional(),
   NOTIFICATION_EMAILS: z.enum(["on", "off"]).optional(),
+  REALTIME_URL: z.url().optional(),
+  REALTIME_TOKEN_SECRET: z.string().min(32).max(200).optional(),
+  REALTIME_EMIT_SECRET: z.string().min(32).max(200).optional(),
 });
 
 const publicSchema = z.object({
