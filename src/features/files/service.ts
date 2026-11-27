@@ -193,13 +193,19 @@ function mimeFor(format: string): string {
 export type FileResult =
   { ok: true } | { ok: false; reason: "not-found" | "project-closed" | "invalid-state" };
 
-async function loadForChange(id: string, session: ClientSession) {
+type LeanFile = ProjectFileDoc & { _id: unknown };
+
+type LoadedFile =
+  | { ok: true; file: LeanFile }
+  | { ok: false; reason: "not-found" | "project-closed" };
+
+async function loadForChange(id: string, session: ClientSession): Promise<LoadedFile> {
   const file = await ProjectFile.findById(id).session(session).lean();
-  if (!file) return { error: "not-found" as const };
+  if (!file) return { ok: false, reason: "not-found" };
   const project = await Project.findById(file.projectId).session(session).lean();
-  if (!project) return { error: "not-found" as const };
-  if (!isProjectOpen(project.status)) return { error: "project-closed" as const };
-  return { file };
+  if (!project) return { ok: false, reason: "not-found" };
+  if (!isProjectOpen(project.status)) return { ok: false, reason: "project-closed" };
+  return { ok: true, file };
 }
 
 export async function setFileVisibility(input: {
@@ -210,7 +216,7 @@ export async function setFileVisibility(input: {
   await connectToDatabase();
   return withSession<FileResult>(async (session) => {
     const loaded = await loadForChange(input.id, session);
-    if ("error" in loaded) return { ok: false, reason: loaded.error };
+    if (!loaded.ok) return { ok: false, reason: loaded.reason };
     if (loaded.file.status !== "active") return { ok: false, reason: "invalid-state" };
     await ProjectFile.updateOne({ _id: input.id }, { $set: { clientVisible: input.visible } }, { session });
     await recordAudit(
@@ -235,7 +241,7 @@ export async function archiveFile(input: { actor: AuditActor; id: string }): Pro
   await connectToDatabase();
   return withSession<FileResult>(async (session) => {
     const loaded = await loadForChange(input.id, session);
-    if ("error" in loaded) return { ok: false, reason: loaded.error };
+    if (!loaded.ok) return { ok: false, reason: loaded.reason };
     if (loaded.file.status !== "active") return { ok: false, reason: "invalid-state" };
     await ProjectFile.updateOne(
       { _id: input.id, status: "active" },
@@ -259,7 +265,7 @@ export async function restoreFile(input: { actor: AuditActor; id: string }): Pro
   await connectToDatabase();
   return withSession<FileResult>(async (session) => {
     const loaded = await loadForChange(input.id, session);
-    if ("error" in loaded) return { ok: false, reason: loaded.error };
+    if (!loaded.ok) return { ok: false, reason: loaded.reason };
     if (loaded.file.status !== "archived") return { ok: false, reason: "invalid-state" };
     await ProjectFile.updateOne(
       { _id: input.id, status: "archived" },
@@ -280,8 +286,6 @@ export async function restoreFile(input: { actor: AuditActor; id: string }): Pro
 }
 
 // ---------------------------------------------------------------- reads
-
-type LeanFile = ProjectFileDoc & { _id: unknown };
 
 async function deliverableInfo(ids: (string | undefined)[]) {
   const valid = [...new Set(ids.filter((id): id is string => Boolean(id) && isObjectId(id as string)))];

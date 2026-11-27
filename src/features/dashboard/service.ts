@@ -1,11 +1,12 @@
 import "server-only";
+import type { QueryFilter } from "mongoose";
 import { listAuditLogs, type AuditRow } from "@/features/audit/service";
 import { Lead } from "@/features/leads/models/lead";
 import { normalizeLeadStatus, type LeadStatus } from "@/features/leads/pipeline";
 import { Organization } from "@/features/organizations/models/organization";
 import { Deliverable } from "@/features/projects/models/deliverable";
-import { Project } from "@/features/projects/models/project";
-import { clientProjectFilter } from "@/features/projects/status";
+import { Project, type ProjectDoc } from "@/features/projects/models/project";
+import { clientProjectFilter, type ProjectStatus } from "@/features/projects/status";
 import { Proposal } from "@/features/proposals/models/proposal";
 import { clientProposalFilter } from "@/features/proposals/status";
 import { isObjectId } from "@/lib/object-id";
@@ -29,7 +30,7 @@ export interface AdminSummary {
   activity: AuditRow[] | null;
 }
 
-const OPEN = ["planning", "active", "on_hold"];
+const OPEN: ProjectStatus[] = ["planning", "active", "on_hold"];
 
 async function leadsSummary(): Promise<NonNullable<AdminSummary["leads"]>> {
   const live = { archivedAt: { $exists: false } };
@@ -62,7 +63,8 @@ async function proposalsSummary(now: Date): Promise<NonNullable<AdminSummary["pr
 
 /** `projectIds` null means every project; otherwise only those (a developer's assigned projects). */
 async function projectsSummary(projectIds: string[] | null): Promise<NonNullable<AdminSummary["projects"]>> {
-  const scope = projectIds === null ? {} : { _id: { $in: projectIds.filter(isObjectId) } };
+  const scope: QueryFilter<ProjectDoc> =
+    projectIds === null ? {} : { _id: { $in: projectIds.filter(isObjectId) } };
   const open = await Project.find({ ...scope, status: { $in: OPEN } })
     .select("status")
     .lean();

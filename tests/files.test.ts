@@ -190,7 +190,7 @@ describe("which clients may download a file", () => {
 
   it("never lets an empty or look-alike organization id match", () => {
     expect(clientMayDownload({ ...base, clientOrganizationId: "", fileOrganizationId: "" })).toBe(
-      true === false,
+      false,
     );
     expect(clientMayDownload({ ...base, clientOrganizationId: "org-a ", fileOrganizationId: "org-a" })).toBe(
       false,

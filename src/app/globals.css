@@ -23,7 +23,7 @@
   --color-pine-600: #234b3f;
   --color-ochre-400: #d2a24a;
   --color-ochre-500: #b7832b;
-  --font-sans: var(--font-roboto), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Semantic tokens. Components use these, never raw palette colours, so light/dark stay in sync. */
